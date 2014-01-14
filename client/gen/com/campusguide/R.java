@@ -60,6 +60,7 @@ containing a value of this type.
          */
         public static final int activity_horizontal_margin=0x7f040000;
         public static final int activity_vertical_margin=0x7f040001;
+        public static final int main_pager_image_height=0x7f040003;
         public static final int slideing_up_panel_height=0x7f040002;
     }
     public static final class drawable {
@@ -70,17 +71,22 @@ containing a value of this type.
         public static final int location_add=0x7f020004;
         public static final int point=0x7f020005;
         public static final int search=0x7f020006;
-        public static final int search_frame_bg=0x7f020007;
+        public static final int shadow_frame_bg=0x7f020007;
     }
     public static final class id {
-        public static final int action_settings=0x7f080009;
-        public static final int brought_by=0x7f080008;
+        public static final int action_settings=0x7f08000e;
         public static final int drawer_layout=0x7f080000;
         public static final int left_drawer=0x7f080004;
         public static final int main_content=0x7f080002;
+        public static final int main_pager_address=0x7f080009;
         public static final int main_pager_button=0x7f080005;
-        public static final int main_pager_content=0x7f080007;
-        public static final int main_pager_title=0x7f080006;
+        public static final int main_pager_categories=0x7f080007;
+        public static final int main_pager_description=0x7f08000d;
+        public static final int main_pager_first_photo=0x7f08000a;
+        public static final int main_pager_name=0x7f080006;
+        public static final int main_pager_openhour=0x7f080008;
+        public static final int main_pager_photos_title=0x7f08000c;
+        public static final int main_pager_second_photo=0x7f08000b;
         public static final int sliding_layout=0x7f080001;
         public static final int sliding_pager=0x7f080003;
     }
@@ -94,7 +100,12 @@ containing a value of this type.
     }
     public static final class string {
         public static final int action_settings=0x7f050001;
+        public static final int address=0x7f050005;
         public static final int app_name=0x7f050000;
+        public static final int introduction=0x7f050007;
+        public static final int main_pager_title_btn=0x7f050003;
+        public static final int open_hour=0x7f050004;
+        public static final int photos=0x7f050006;
         public static final int search_hint=0x7f050002;
     }
     public static final class style {

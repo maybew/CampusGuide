@@ -19,7 +19,7 @@ public class ImageLoader extends BaseLoader<String, Void, Bitmap>{
 	@Override
 	protected InputStream getInputStream(String url) throws IOException {
 		// TODO Auto-generated method stub
-		return super.getInputStream(MEDIA_URL+url);
+		return super.getInputStream(url);
 	}
 
 	@Override

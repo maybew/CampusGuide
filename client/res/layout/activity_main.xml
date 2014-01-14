@@ -24,7 +24,7 @@
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="10dp"
-                android:background="@drawable/search_frame_bg"
+                android:background="@drawable/shadow_frame_bg"
                 android:gravity="center"
                 android:orientation="horizontal" >
 

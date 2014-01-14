@@ -3,5 +3,9 @@
     <string name="app_name">CampusGuide</string>
     <string name="action_settings">Action Settings</string>
     <string name="search_hint">Search</string>
-
+    <string name="main_pager_title_btn">Go</string>
+	<string name="open_hour">Open hour:</string>
+	<string name="address">Address:</string>
+	<string name="photos">Photos</string>
+	<string name="introduction">Introduction:</string>
 </resources>

@@ -17,8 +17,10 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.app.ListFragment;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,8 +31,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.campusguide.R;
+import com.campusguide.objects.BaseBuilding;
 import com.campusguide.utilities.ImageLoader;
 import com.campusguide.utilities.JSONLoader;
+import com.campusguide.utilities.Utils;
 import com.campusguide.views.SlidingUpPanelLayout;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient.ConnectionCallbacks;
@@ -53,7 +57,7 @@ public class MainActivity extends FragmentActivity implements
 		ConnectionCallbacks, OnConnectionFailedListener, LocationListener,
 		OnMyLocationButtonClickListener, OnMarkerClickListener,
 		JSONLoader.OnJSONLoadListener, ViewPager.OnPageChangeListener {
-	
+
 	private static final String MAIN_ACTIVITY_TAG = "main_activity";
 	private static final String MAP_FRAGMENT_TAG = "map_fragment";
 	private static final LatLng UWL_CENTER = new LatLng(43.81604278,
@@ -71,7 +75,7 @@ public class MainActivity extends FragmentActivity implements
 	private ListView mDrawerList;
 
 	private SlidingUpPanelLayout mSlidingUpPanelLayout;
-	
+
 	private ViewPager mPager;
 	private MainPagerAdapter mMainPagerAdapter = new MainPagerAdapter(
 			getSupportFragmentManager());
@@ -114,24 +118,26 @@ public class MainActivity extends FragmentActivity implements
 				.findViewById(R.id.sliding_pager);
 
 		mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentByTag(MAP_FRAGMENT_TAG);
-		
+				.findFragmentByTag(MAP_FRAGMENT_TAG);
+
 		if (mapFragment == null) {
-            // To programmatically add the map, we first create a SupportMapFragment.
+			// To programmatically add the map, we first create a
+			// SupportMapFragment.
 			mapFragment = SupportMapFragment.newInstance();
 
-            // Then we add it using a FragmentTransaction.
-            FragmentTransaction fragmentTransaction =
-                    getSupportFragmentManager().beginTransaction();
-            fragmentTransaction.add(R.id.main_content, mapFragment, MAP_FRAGMENT_TAG);
-            fragmentTransaction.commit();
-        }
+			// Then we add it using a FragmentTransaction.
+			FragmentTransaction fragmentTransaction = getSupportFragmentManager()
+					.beginTransaction();
+			fragmentTransaction.add(R.id.main_content, mapFragment,
+					MAP_FRAGMENT_TAG);
+			fragmentTransaction.commit();
+		}
 
 		if (savedInstanceState == null) {
 			// First incarnation of this activity.
 			mapFragment.setRetainInstance(true);
 			JSONLoader jl = new JSONLoader(this);
-			jl.execute("all");
+			jl.execute("/all");
 			setUpMapIfNeeded();
 		} else {
 			// Reincarnated activity. The obtained map is the same map instance
@@ -139,7 +145,6 @@ public class MainActivity extends FragmentActivity implements
 			// activity life cycle. There is no need to reinitialize it.
 			mMap = mapFragment.getMap();
 		}
-		
 
 		/*
 		 * new Routing(this, map, Color.parseColor("#ff0000"),
@@ -260,17 +265,26 @@ public class MainActivity extends FragmentActivity implements
 		// TODO Auto-generated method stub
 
 		JSONObject object;
+		List<BaseBuilding> buildings = new ArrayList<BaseBuilding>();
 		for (int i = 0, n = result.length(); i < n; i++) {
 			try {
-				object = result.getJSONObject(i);
+				object = result.getJSONObject(i).getJSONObject("fields");
+
+				BaseBuilding building = BaseBuilding.newInstance(object, this);
+
+				buildings.add(building);
+
 				// Add markers
-				mMarkers.add(mMap.addMarker(new MarkerOptions()
-						.position(new LatLng(object.getDouble("lat"), object
-								.getDouble("lng"))).icon(BitmapDescriptorFactory.fromResource(R.drawable.point))));
-				ImageView mImageView = new ImageView(this);
-				new ImageLoader(mImageView).execute((String) object.get("img"));
-				mImageViews.add(mImageView);
-				mMainPagerAdapter.addFragment(MainPagerFragment.newInstance(object.getString("name")));
+				mMarkers.add(mMap
+						.addMarker(new MarkerOptions()
+								.position(
+										new LatLng(building.getLat(), building
+												.getLng()))
+								.icon(BitmapDescriptorFactory
+										.fromResource(R.drawable.point))));
+
+				mMainPagerAdapter.addFragment(MainPagerFragment
+						.newInstance(building));
 			} catch (JSONException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -279,7 +293,7 @@ public class MainActivity extends FragmentActivity implements
 		setUpPagerIfNeeded();
 	}
 
-	private static class MainPagerAdapter extends FragmentStatePagerAdapter  {
+	private static class MainPagerAdapter extends FragmentStatePagerAdapter {
 		private List<Fragment> mFragmentList;
 
 		public MainPagerAdapter(FragmentManager fm) {
@@ -288,7 +302,7 @@ public class MainActivity extends FragmentActivity implements
 		}
 
 		public void addFragment(MainPagerFragment newInstance) {
-			mFragmentList.add(newInstance);			
+			mFragmentList.add(newInstance);
 		}
 
 		@Override
@@ -305,23 +319,45 @@ public class MainActivity extends FragmentActivity implements
 	}
 
 	public static class MainPagerFragment extends Fragment {
-		private String mTitle;
-		
-		public static MainPagerFragment newInstance(String title) {
-			MainPagerFragment f= new MainPagerFragment();
-			
-			Bundle args = new Bundle();
-            args.putString("title", title);
-            f.setArguments(args);
+		private String mName;
+		private String mCategories;
+		private String mOpenTime;
+		private String mAddress;
+		private List<String> mPhotos;
+		private String mDescription;
 
-            return f;
+		public static MainPagerFragment newInstance(BaseBuilding b) {
+			MainPagerFragment f = new MainPagerFragment();
+
+			Bundle args = new Bundle();
+			args.putString("name", b.getName());
+			args.putString("categories",
+					Utils.stringJoiner(b.getCategories(), ", "));
+			args.putString("opentime", b.getOpenTime());
+			args.putString("address", b.getAddress());
+			args.putStringArrayList("photos", b.getURLs());
+			args.putString("description", b.getDescription());
+			f.setArguments(args);
+
+			return f;
 		}
 
 		@Override
 		public void onCreate(Bundle savedInstanceState) {
 			// TODO Auto-generated method stub
 			super.onCreate(savedInstanceState);
-			mTitle = getArguments() != null ? getArguments().getString("title") : "";
+			mName = getArguments() != null ? getArguments().getString("name")
+					: "";
+			mCategories = getArguments() != null ? getArguments().getString(
+					"categories") : "";
+			mOpenTime = getArguments() != null ? getArguments().getString(
+					"opentime") : "";
+			mAddress = getArguments() != null ? getArguments().getString(
+					"address") : "";
+			mPhotos = getArguments() != null ? getArguments()
+					.getStringArrayList("photos") : null;
+			mDescription = getArguments() != null ? getArguments().getString(
+					"description") : "";
 		}
 
 		@Override
@@ -331,10 +367,41 @@ public class MainActivity extends FragmentActivity implements
 			setRetainInstance(true);
 			View view = inflater.inflate(R.layout.fragment_main_pager,
 					container, false);
-			TextView tv = (TextView) view.findViewById(R.id.main_pager_title);
-			tv.setText(mTitle);
+			TextView nameTv = (TextView) view
+					.findViewById(R.id.main_pager_name);
+			nameTv.setText(mName);
+			TextView categoriesTv = (TextView) view
+					.findViewById(R.id.main_pager_categories);
+			categoriesTv.setText(mCategories);
+			TextView openTimeTv = (TextView) view
+					.findViewById(R.id.main_pager_openhour);
+			openTimeTv.setText(mOpenTime);
+			TextView addressTv = (TextView) view
+					.findViewById(R.id.main_pager_address);
+			addressTv.setText(mAddress);
+			if (mPhotos.size() != 0) {
+				ImageView firstIv = (ImageView) view
+						.findViewById(R.id.main_pager_first_photo);
+				new ImageLoader(firstIv).execute(mPhotos.get(0));
+
+				if (mPhotos.size() != 1) {
+					ImageView secondIv = (ImageView) view
+							.findViewById(R.id.main_pager_second_photo);
+					new ImageLoader(secondIv).execute(mPhotos.get(1));
+				}
+			}
+			TextView photoTitleTv = (TextView) view
+					.findViewById(R.id.main_pager_photos_title);
+			photoTitleTv.setText(mPhotos.size() + " photos");
+			TextView descriptionTv = (TextView) view
+					.findViewById(R.id.main_pager_description);
+			descriptionTv.setText(mDescription);
 			return view;
 		}
+	}
+
+	public static class SearchListFragment extends ListFragment {
+
 	}
 
 	@Override
@@ -360,16 +427,18 @@ public class MainActivity extends FragmentActivity implements
 	@Override
 	public boolean onMarkerClick(Marker arg0) {
 		// TODO Auto-generated method stub
-		mSlidingUpPanelLayout.showPane();		
-		mPager.setCurrentItem(mMarkers.indexOf(arg0));	
+		mSlidingUpPanelLayout.showPane();
+		mPager.setCurrentItem(mMarkers.indexOf(arg0));
 		activateMarker(arg0);
 		return false;
 	}
-	
+
 	private void activateMarker(Marker marker) {
-		if(mActivedMarker != null)
-			mActivedMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.point));
-		marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.location));
+		if (mActivedMarker != null)
+			mActivedMarker.setIcon(BitmapDescriptorFactory
+					.fromResource(R.drawable.point));
+		marker.setIcon(BitmapDescriptorFactory
+				.fromResource(R.drawable.location));
 		mActivedMarker = marker;
 	}
 }
