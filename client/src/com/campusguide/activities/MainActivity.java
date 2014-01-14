@@ -10,6 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -52,6 +53,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.campusguide.activities.Constants.Extra;
 
 public class MainActivity extends FragmentActivity implements
 		ConnectionCallbacks, OnConnectionFailedListener, LocationListener,
@@ -318,12 +320,14 @@ public class MainActivity extends FragmentActivity implements
 
 	}
 
-	public static class MainPagerFragment extends Fragment {
+	public static class MainPagerFragment extends Fragment implements
+			View.OnClickListener {
 		private String mName;
 		private String mCategories;
 		private String mOpenTime;
 		private String mAddress;
 		private List<String> mPhotos;
+		private List<String> mPhotosDesc;
 		private String mDescription;
 
 		public static MainPagerFragment newInstance(BaseBuilding b) {
@@ -336,6 +340,7 @@ public class MainActivity extends FragmentActivity implements
 			args.putString("opentime", b.getOpenTime());
 			args.putString("address", b.getAddress());
 			args.putStringArrayList("photos", b.getURLs());
+			args.putStringArrayList("photos_desc", b.getImagesDesc());
 			args.putString("description", b.getDescription());
 			f.setArguments(args);
 
@@ -356,6 +361,8 @@ public class MainActivity extends FragmentActivity implements
 					"address") : "";
 			mPhotos = getArguments() != null ? getArguments()
 					.getStringArrayList("photos") : null;
+			mPhotosDesc = getArguments() != null ? getArguments()
+					.getStringArrayList("photos_desc") : null;
 			mDescription = getArguments() != null ? getArguments().getString(
 					"description") : "";
 		}
@@ -393,10 +400,23 @@ public class MainActivity extends FragmentActivity implements
 			TextView photoTitleTv = (TextView) view
 					.findViewById(R.id.main_pager_photos_title);
 			photoTitleTv.setText(mPhotos.size() + " photos");
+			photoTitleTv.setOnClickListener(this);
+
 			TextView descriptionTv = (TextView) view
 					.findViewById(R.id.main_pager_description);
 			descriptionTv.setText(mDescription);
 			return view;
+		}
+
+		@Override
+		public void onClick(View arg0) {
+			// TODO Auto-generated method stub
+			Intent intent = new Intent(getActivity(), ImagePagerActivity.class);
+			intent.putExtra(Extra.IMAGES,
+					mPhotos.toArray(new String[mPhotos.size()]));
+			intent.putExtra(Extra.IMAGES_DESC,
+					mPhotosDesc.toArray(new String[mPhotosDesc.size()]));
+			startActivity(intent);
 		}
 	}
 

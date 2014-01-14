@@ -23,15 +23,15 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
-        android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+        android:label="@string/app_name" >
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="AIzaSyAgEqsNDf1qo4NQGd_d8c0HeAG4-R9xsSE" />
 
         <activity
             android:name="com.campusguide.activities.MainActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize" 
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustPan" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -39,6 +39,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.campusguide.activities.ImagePagerActivity"
+            android:label="@string/activity_image_pager_name" />
     </application>
 
 </manifest>
