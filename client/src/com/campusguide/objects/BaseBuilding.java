@@ -10,6 +10,8 @@ import org.json.JSONObject;
 import android.content.Context;
 
 public class BaseBuilding {
+	private static final List<String> allCategories = new ArrayList<String>();
+	protected int pk;
 	protected String name;
 	protected List<String> categories;
 	protected String address;
@@ -19,16 +21,38 @@ public class BaseBuilding {
 	protected List<Image> images;
 	protected String openTime;
 
+	public enum Fields {
+		PK("pk"), NAME("name"), CATEGPROES("categories"), ADDRESS("address"), LAT(
+				"lat"), LNG("lng"), DESC("desc"), IMAGES("images"), OPENTIME(
+				"open_time");
+
+		protected String _sValue;
+
+		private Fields(String sValue) {
+			this._sValue = sValue;
+		}
+
+		public String getValue() {
+			return _sValue;
+		}
+	}
+
 	public static BaseBuilding newInstance(JSONObject object, Context context) {
 		BaseBuilding b = null;
 		try {
-			b = new BaseBuilding(object.getString("name"),
-					BaseBuilding.newStringList(object
-							.getJSONArray("categories")),
-					object.getString("address"), object.getDouble("lat"),
-					object.getDouble("lng"), object.getString("desc"),
-					Image.newInstanceList(object.getJSONArray("images"),
-							context), object.getString("open_time"));
+			JSONObject fields = object.getJSONObject("fields");
+			b = new BaseBuilding(object.getInt(Fields.PK.getValue()),
+					fields.getString(Fields.NAME.getValue()),
+					BaseBuilding.newStringList(fields
+							.getJSONArray(Fields.CATEGPROES.getValue())),
+					fields.getString(Fields.ADDRESS.getValue()),
+					fields.getDouble(Fields.LAT.getValue()),
+					fields.getDouble(Fields.LNG.getValue()),
+					fields.getString(Fields.DESC.getValue()),
+					Image.newInstanceList(
+							fields.getJSONArray(Fields.IMAGES.getValue()),
+							context), fields.getString(Fields.OPENTIME
+							.getValue()));
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -36,9 +60,14 @@ public class BaseBuilding {
 		return b;
 	}
 
-	private BaseBuilding(String name, List<String> categories, String address,
-			double lat, double lng, String description, List<Image> images,
-			String openTime) {
+	public static List<String> getAllCategories() {
+		return allCategories;
+	}
+
+	private BaseBuilding(int pk, String name, List<String> categories,
+			String address, double lat, double lng, String description,
+			List<Image> images, String openTime) {
+		this.pk = pk;
 		this.name = name;
 		this.categories = categories;
 		this.address = address;
@@ -47,6 +76,10 @@ public class BaseBuilding {
 		this.description = description;
 		this.images = images;
 		this.openTime = openTime;
+		for (String s : categories) {
+			if (!allCategories.contains(s))
+				allCategories.add(s);
+		}
 	}
 
 	public static List<String> newStringList(JSONArray array) {
@@ -62,6 +95,10 @@ public class BaseBuilding {
 		return list;
 	}
 
+	public int getPk() {
+		return pk;
+	}
+
 	public String getName() {
 		return name;
 	}
@@ -73,11 +110,11 @@ public class BaseBuilding {
 	public String getAddress() {
 		return address;
 	}
-	
+
 	public double getLat() {
 		return lat;
 	}
-	
+
 	public double getLng() {
 		return lng;
 	}
@@ -89,18 +126,18 @@ public class BaseBuilding {
 	public List<Image> getImages() {
 		return images;
 	}
-	
+
 	public ArrayList<String> getURLs() {
 		ArrayList<String> urls = new ArrayList<String>();
-		for(int i=0,n=images.size();i<n;i++) {
+		for (int i = 0, n = images.size(); i < n; i++) {
 			urls.add(images.get(i).getUrl());
 		}
 		return urls;
 	}
-	
+
 	public ArrayList<String> getImagesDesc() {
 		ArrayList<String> desc = new ArrayList<String>();
-		for(int i=0,n=images.size();i<n;i++) {
+		for (int i = 0, n = images.size(); i < n; i++) {
 			desc.add(images.get(i).getDescription());
 		}
 		return desc;
@@ -108,5 +145,17 @@ public class BaseBuilding {
 
 	public String getOpenTime() {
 		return openTime;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		// TODO Auto-generated method stub
+		return ((BaseBuilding) o).pk == pk;
+	}
+
+	@Override
+	public int hashCode() {
+		// TODO Auto-generated method stub
+		return pk;
 	}
 }

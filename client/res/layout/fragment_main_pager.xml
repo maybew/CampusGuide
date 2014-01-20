@@ -3,27 +3,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <FrameLayout
+    <ImageButton
         android:id="@+id/main_pager_button"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true" >
-
-        <ImageButton
-            android:layout_width="96dp"
-            android:layout_height="@dimen/slideing_up_panel_height"
-            android:background="@drawable/add_location_btn_bg"
-            android:contentDescription="@string/main_pager_title_btn"
-            android:paddingBottom="16dp"
-            android:src="@drawable/location_add" />
-
-        <TextView
-            android:layout_width="96dp"
-            android:layout_height="@dimen/slideing_up_panel_height"
-            android:gravity="center_horizontal"
-            android:paddingTop="50dp"
-            android:text="@string/main_pager_title_btn" />
-    </FrameLayout>
+        android:layout_height="@dimen/slideing_up_panel_height"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/add_location_btn_bg"
+        android:contentDescription="@string/main_pager_title_btn"
+        android:padding="10dp"
+        android:src="@drawable/navigation" />
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -80,8 +68,8 @@
                     android:id="@+id/main_pager_openhour"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@android:color/darker_gray"
                     android:gravity="center"
+                    android:textColor="@android:color/darker_gray"
                     android:textSize="16sp" />
 
                 <TextView
@@ -95,8 +83,8 @@
                     android:id="@+id/main_pager_address"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@android:color/darker_gray"
                     android:gravity="center"
+                    android:textColor="@android:color/darker_gray"
                     android:textSize="16sp" />
             </LinearLayout>
 
@@ -130,17 +118,75 @@
                         android:contentDescription="@string/photos"
                         android:scaleType="centerCrop" />
                 </LinearLayout>
-                
+
                 <TextView
                     android:id="@+id/main_pager_photos_title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:gravity="center"
                     android:padding="10dp"
                     android:textColor="@android:color/darker_gray"
-                    android:gravity="center"
                     android:textSize="16sp" />
             </LinearLayout>
-            
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal" >
+
+                <LinearLayout
+                    android:id="@+id/fragment_main_pager_toview_add"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="5dp"
+                    android:layout_weight="0.5"
+                    android:background="@drawable/shadow_frame_bg"
+                    android:orientation="horizontal"
+                    android:padding="10dp" >
+
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/photos"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/love" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="@string/main_pager_add_toview"
+                        android:textSize="20sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/fragment_main_pager_toview_list"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="5dp"
+                    android:layout_weight="0.5"
+                    android:background="@drawable/shadow_frame_bg"
+                    android:orientation="horizontal"
+                    android:padding="10dp" >
+
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/photos"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/location_all" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="@string/main_pager_toview_list"
+                        android:textSize="20sp" />
+                </LinearLayout>
+            </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -162,9 +208,7 @@
                     android:layout_height="wrap_content"
                     android:textColor="@android:color/darker_gray"
                     android:textSize="16sp" />
-
             </LinearLayout>
-            
         </LinearLayout>
     </ScrollView>
 

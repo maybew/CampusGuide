@@ -9,4 +9,10 @@
 	<string name="address">Address:</string>
 	<string name="photos">Photos</string>
 	<string name="introduction">Introduction:</string>
+	<string name="no_data">No data</string>
+	<string name="nearby_spinner_desc"> around you</string>
+	<string name="to_view_go_btn">Go</string>
+	<string name="to_view_remove_all_btn">Remove all</string>
+	<string name="main_pager_add_toview">Add to view</string>
+	<string name="main_pager_toview_list">To view list</string>
 </resources>

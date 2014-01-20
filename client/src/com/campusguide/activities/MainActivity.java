@@ -4,39 +4,56 @@ import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_HYBRID;
 import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_NORMAL;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Intent;
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.ListFragment;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
-import android.view.LayoutInflater;
+import android.util.SparseArray;
 import android.view.View;
-import android.view.ViewGroup;
+import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.campusguide.R;
 import com.campusguide.objects.BaseBuilding;
-import com.campusguide.utilities.ImageLoader;
+import com.campusguide.route.Routing;
+import com.campusguide.route.RoutingListener;
 import com.campusguide.utilities.JSONLoader;
 import com.campusguide.utilities.Utils;
 import com.campusguide.views.SlidingUpPanelLayout;
+import com.campusguide.adapters.MainPagerAdapter;
+import com.campusguide.fragments.MainPagerFragment;
+import com.campusguide.fragments.NearbyListFragment;
+import com.campusguide.fragments.SearchListFragment;
+import com.campusguide.fragments.SearchListFragment.OnSearchItemClickedListener;
+import com.campusguide.fragments.ToViewListFragment;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient.ConnectionCallbacks;
 import com.google.android.gms.common.GooglePlayServicesClient.OnConnectionFailedListener;
@@ -53,15 +70,22 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.campusguide.activities.Constants.Extra;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.android.SphericalUtil;
 
 public class MainActivity extends FragmentActivity implements
 		ConnectionCallbacks, OnConnectionFailedListener, LocationListener,
 		OnMyLocationButtonClickListener, OnMarkerClickListener,
-		JSONLoader.OnJSONLoadListener, ViewPager.OnPageChangeListener {
+		JSONLoader.OnJSONLoadListener, RoutingListener,
+		SearchListFragment.OnSearchItemClickedListener,
+		MainPagerAdapter.OnMainPagerSelectedListener {
 
 	private static final String MAIN_ACTIVITY_TAG = "main_activity";
 	private static final String MAP_FRAGMENT_TAG = "map_fragment";
+	private static final String SEARCH_FRAGMENT_TAG = "search_fragment";
+	private static final String NEARBY_FRAGMENT_TAG = "nearby_fragment";
+	private static final String TOVIEW_FRAGMENT_TAG = "toview_fragment";
 	private static final LatLng UWL_CENTER = new LatLng(43.81604278,
 			-91.23061895);
 	private static final int UWL_CENTER_ZOOM = 15;
@@ -75,27 +99,31 @@ public class MainActivity extends FragmentActivity implements
 
 	private DrawerLayout mDrawerLayout;
 	private ListView mDrawerList;
-
 	private SlidingUpPanelLayout mSlidingUpPanelLayout;
-
 	private ViewPager mPager;
-	private MainPagerAdapter mMainPagerAdapter = new MainPagerAdapter(
-			getSupportFragmentManager());
+
+	private LinearLayout mTitleBar;
+	private TextView mSearchEdit;
+	private ImageButton mNearbyButton;
+	private ImageButton mToviewButton;
+
+	private MainPagerAdapter mMainPagerAdapter;
 
 	private SupportMapFragment mapFragment;
 	private GoogleMap mMap;
 	private UiSettings mUiSettings;
 	private LocationClient mLocationClient;
+	// private SearchListFragment mSearchListFragment;
 
-	private List<ImageView> mImageViews = new ArrayList<ImageView>();
-	private List<Marker> mMarkers = new ArrayList<Marker>();
-	private Marker mActivedMarker;
+	private static final List<BaseBuilding> mBuildings = new ArrayList<BaseBuilding>();
+	private static final SparseArray<Marker> mMarkers = new SparseArray<Marker>();
+	private static boolean mPrepared = false;
+	private static boolean mIsSlidingPaneShown = false;
+	private static Polyline mActivedPolyLine = null;
+	private static Marker mActivedMarker = null;
 
-	/**
-	 * This activity loads a map and then displays the route and pushpins on it.
-	 */
 	@Override
-	public void onCreate(Bundle savedInstanceState) {
+	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
@@ -114,14 +142,26 @@ public class MainActivity extends FragmentActivity implements
 		mSlidingUpPanelLayout.setDragPeekingViewOnly(true);
 		mSlidingUpPanelLayout.setPanelHeight((int) getResources().getDimension(
 				R.dimen.slideing_up_panel_height));
-		mSlidingUpPanelLayout.setAnchorPoint(0.5f);
+		mSlidingUpPanelLayout.setAnchorPoint(0.6f);
 
 		mPager = (ViewPager) mSlidingUpPanelLayout
 				.findViewById(R.id.sliding_pager);
 
+		mTitleBar = (LinearLayout) findViewById(R.id.main_title_bar);
+		mSearchEdit = (TextView) findViewById(R.id.main_search_edit);
+		mSearchEdit.setOnClickListener(new SearchEditListener());
+		mNearbyButton = (ImageButton) findViewById(R.id.main_nearby_btn);
+		mNearbyButton.setOnClickListener(new NearbyButtonListener());
+		mToviewButton = (ImageButton) findViewById(R.id.main_toview_btn);
+		mToviewButton.setOnClickListener(new ToviewButtonListener());
+
+		// It isn't possible to set a fragment's id programmatically so we set a
+		// tag instead and
+		// search for it using that.
 		mapFragment = (SupportMapFragment) getSupportFragmentManager()
 				.findFragmentByTag(MAP_FRAGMENT_TAG);
 
+		// We only create a fragment if it doesn't already exist.
 		if (mapFragment == null) {
 			// To programmatically add the map, we first create a
 			// SupportMapFragment.
@@ -140,7 +180,6 @@ public class MainActivity extends FragmentActivity implements
 			mapFragment.setRetainInstance(true);
 			JSONLoader jl = new JSONLoader(this);
 			jl.execute("/all");
-			setUpMapIfNeeded();
 		} else {
 			// Reincarnated activity. The obtained map is the same map instance
 			// in the previous
@@ -148,21 +187,19 @@ public class MainActivity extends FragmentActivity implements
 			mMap = mapFragment.getMap();
 		}
 
-		/*
-		 * new Routing(this, map, Color.parseColor("#ff0000"),
-		 * Routing.Start.BLUE, Routing.Destination.ORANGE).execute(new
-		 * LatLng(43.81764526, -91.23378396), new LatLng(43.81371639,
-		 * -91.23000741));
-		 */
-
+		// We can't be guaranteed that the map is available because Google Play
+		// services might
+		// not be available.
+		setUpMapIfNeeded();
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
+
+		// In case Google Play services has since become available.
 		setUpMapIfNeeded();
 		setUpLocationClientIfNeeded();
-		setUpPagerIfNeeded();
 		mLocationClient.connect();
 	}
 
@@ -175,25 +212,37 @@ public class MainActivity extends FragmentActivity implements
 	}
 
 	@Override
-	public void onAttachedToWindow() {
+	public void onBackPressed() {
 		// TODO Auto-generated method stub
-		super.onAttachedToWindow();
-		mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(UWL_CENTER,
-				UWL_CENTER_ZOOM));
+		if (getSupportFragmentManager().getBackStackEntryCount() != 0) {
+			getSupportFragmentManager().popBackStack();
+			setMainToolViewVisible(true);
+		} else {
+			super.onBackPressed();
+		}
 	}
 
 	private void setUpMapIfNeeded() {
+		// Do a null check to confirm that we have not already instantiated the
+		// map.
 		if (mMap == null) {
+			// Try to obtain the map from the SupportMapFragment.
 			mMap = mapFragment.getMap();
+			// Check if we were successful in obtaining the map.
 			if (mMap != null) {
 				mMap.setMyLocationEnabled(true);
 				mMap.setOnMyLocationButtonClickListener(this);
 				mMap.setOnMarkerClickListener(this);
+				mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(UWL_CENTER,
+						UWL_CENTER_ZOOM));
 				mUiSettings = mMap.getUiSettings();
 				mUiSettings.setMyLocationButtonEnabled(false);
 				mUiSettings.setCompassEnabled(false);
 				mUiSettings.setZoomControlsEnabled(false);
 			}
+		} else {
+			mMap.setOnMyLocationButtonClickListener(this);
+			mMap.setOnMarkerClickListener(this);
 		}
 	}
 
@@ -204,9 +253,108 @@ public class MainActivity extends FragmentActivity implements
 		}
 	}
 
-	private void setUpPagerIfNeeded() {
-		mPager.setAdapter(mMainPagerAdapter);
-		mPager.setOnPageChangeListener(this);
+	@Override
+	public void onJSONLoadSuccess(JSONArray result) {
+		// TODO Auto-generated method stub
+		JSONObject object;
+		int pk;
+		for (int i = 0, n = result.length(); i < n; i++) {
+			try {
+				object = result.getJSONObject(i);
+				pk = object.getInt(BaseBuilding.Fields.PK.getValue());
+				BaseBuilding building = BaseBuilding.newInstance(object, this);
+
+				if (!mBuildings.contains(building))
+					mBuildings.add(building);
+
+				// Add markers
+				mMarkers.put(pk,
+						mMap.addMarker(new MarkerOptions()
+								.title(String.valueOf(pk))
+								.position(
+										new LatLng(building.getLat(), building
+												.getLng()))
+								.icon(BitmapDescriptorFactory
+										.fromResource(R.drawable.point))));
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		mMainPagerAdapter = new MainPagerAdapter(this, mBuildings, mPager);
+		mPrepared = true;
+	}
+
+	@Override
+	public boolean onMarkerClick(Marker arg0) {
+		// TODO Auto-generated method stub
+		int pk = Integer.parseInt(arg0.getTitle());
+		mSlidingUpPanelLayout.showPane();
+		mIsSlidingPaneShown = true;
+		activateMarker(pk);
+		return true;
+	}
+
+	@Override
+	public boolean onMyLocationButtonClick() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void onLocationChanged(Location arg0) {
+		// TODO Auto-generated method stub
+		/*
+		 * if (!mPrepared) return; if (mActivedPolyLine != null) return; LatLng
+		 * start = new LatLng(arg0.getLatitude(), arg0.getLongitude()); Routing
+		 * routing = new Routing(Routing.TravelMode.WALKING);
+		 * routing.registerListener(this); routing.execute(start,
+		 * mMarkers.get(0).getPosition(), mMarkers.get(1) .getPosition(),
+		 * mMarkers.get(2).getPosition());
+		 */
+	}
+
+	@Override
+	public void onConnectionFailed(ConnectionResult arg0) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onConnected(Bundle arg0) {
+		// TODO Auto-generated method stub
+		mLocationClient.requestLocationUpdates(REQUEST, this);
+	}
+
+	@Override
+	public void onDisconnected() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onRoutingFailure() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onRoutingStart() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onRoutingSuccess(PolylineOptions mPolyOptions) {
+		// TODO Auto-generated method stub
+		if (mActivedPolyLine != null)
+			mActivedPolyLine.remove();
+		PolylineOptions polyoptions = new PolylineOptions();
+		polyoptions.color(Color.HSVToColor(100, new float[] { 200, 1, 1 }));
+		polyoptions.width(10);
+		polyoptions.addAll(mPolyOptions.getPoints());
+		mActivedPolyLine = mMap.addPolyline(polyoptions);
+
 	}
 
 	private class DrawerItemClickListener implements
@@ -232,233 +380,197 @@ public class MainActivity extends FragmentActivity implements
 		}
 	}
 
-	@Override
-	public void onLocationChanged(Location arg0) {
-		// TODO Auto-generated method stub
+	private class SearchEditListener implements OnClickListener {
 
-	}
-
-	@Override
-	public void onConnectionFailed(ConnectionResult arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void onConnected(Bundle arg0) {
-		// TODO Auto-generated method stub
-		mLocationClient.requestLocationUpdates(REQUEST, this); // LocationListener
-	}
-
-	@Override
-	public void onDisconnected() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public boolean onMyLocationButtonClick() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public void onJSONLoadSuccess(JSONArray result) {
-		// TODO Auto-generated method stub
-
-		JSONObject object;
-		List<BaseBuilding> buildings = new ArrayList<BaseBuilding>();
-		for (int i = 0, n = result.length(); i < n; i++) {
-			try {
-				object = result.getJSONObject(i).getJSONObject("fields");
-
-				BaseBuilding building = BaseBuilding.newInstance(object, this);
-
-				buildings.add(building);
-
-				// Add markers
-				mMarkers.add(mMap
-						.addMarker(new MarkerOptions()
-								.position(
-										new LatLng(building.getLat(), building
-												.getLng()))
-								.icon(BitmapDescriptorFactory
-										.fromResource(R.drawable.point))));
-
-				mMainPagerAdapter.addFragment(MainPagerFragment
-						.newInstance(building));
-			} catch (JSONException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		private List<? extends Map<String, ?>> generateSearchData() {
+			List<Map<String, String>> data = new ArrayList<Map<String, String>>();
+			Map<String, String> item = null;
+			BaseBuilding temp = null;
+			for (int i = 0, n = mBuildings.size(); i < n; i++) {
+				temp = mBuildings.get(i);
+				item = new HashMap<String, String>();
+				item.put(BaseBuilding.Fields.PK.getValue(),
+						String.valueOf(temp.getPk()));
+				item.put(BaseBuilding.Fields.NAME.getValue(), temp.getName());
+				item.put(BaseBuilding.Fields.CATEGPROES.getValue(),
+						Utils.stringJoiner(temp.getCategories(), ", "));
+				data.add(item);
 			}
+			return data;
 		}
-		setUpPagerIfNeeded();
+
+		@Override
+		public void onClick(View v) {
+			// TODO Auto-generated method stub
+
+			ListFragment mSearchListFragment = (ListFragment) getSupportFragmentManager()
+					.findFragmentByTag(SEARCH_FRAGMENT_TAG);
+
+			if (mSearchListFragment == null)
+				mSearchListFragment = new SearchListFragment();
+
+			mSearchListFragment.setListAdapter(new SimpleAdapter(
+					getApplicationContext(), generateSearchData(),
+					R.layout.search_list_item, new String[] {
+							BaseBuilding.Fields.NAME.getValue(),
+							BaseBuilding.Fields.CATEGPROES.getValue(),
+							BaseBuilding.Fields.PK.getValue() }, new int[] {
+							R.id.search_list_item_name,
+							R.id.search_list_item_categories,
+							R.id.search_list_item_pk }));
+
+			startNewListFragment(mSearchListFragment, SEARCH_FRAGMENT_TAG);
+		}
+
 	}
 
-	private static class MainPagerAdapter extends FragmentStatePagerAdapter {
-		private List<Fragment> mFragmentList;
+	private class NearbyButtonListener implements OnClickListener {
 
-		public MainPagerAdapter(FragmentManager fm) {
-			super(fm);
-			mFragmentList = new ArrayList<Fragment>();
-		}
+		private final static String DISTANCE_TAG = "distance";
 
-		public void addFragment(MainPagerFragment newInstance) {
-			mFragmentList.add(newInstance);
-		}
+		private List<? extends Map<String, ?>> generateNearbyData() {
+			final Location location = mMap.getMyLocation();
+			final LatLng mLatLng = new LatLng(location.getLatitude(),
+					location.getLongitude());
 
-		@Override
-		public Fragment getItem(int arg0) {
-			// TODO Auto-generated method stub
-			return mFragmentList.get(arg0);
-		}
+			List<Map<String, String>> data = new LinkedList<Map<String, String>>();
+			Map<String, String> item = null;
+			BaseBuilding temp = null;
+			double distance;
+			for (int i = 0, n = mBuildings.size(); i < n; i++) {
+				temp = mBuildings.get(i);
+				distance = SphericalUtil.computeDistanceBetween(mLatLng,
+						new LatLng(temp.getLat(), temp.getLng()));
 
-		@Override
-		public int getCount() { // TODO Auto-generated method stub
-			return mFragmentList.size();
-		}
-
-	}
-
-	public static class MainPagerFragment extends Fragment implements
-			View.OnClickListener {
-		private String mName;
-		private String mCategories;
-		private String mOpenTime;
-		private String mAddress;
-		private List<String> mPhotos;
-		private List<String> mPhotosDesc;
-		private String mDescription;
-
-		public static MainPagerFragment newInstance(BaseBuilding b) {
-			MainPagerFragment f = new MainPagerFragment();
-
-			Bundle args = new Bundle();
-			args.putString("name", b.getName());
-			args.putString("categories",
-					Utils.stringJoiner(b.getCategories(), ", "));
-			args.putString("opentime", b.getOpenTime());
-			args.putString("address", b.getAddress());
-			args.putStringArrayList("photos", b.getURLs());
-			args.putStringArrayList("photos_desc", b.getImagesDesc());
-			args.putString("description", b.getDescription());
-			f.setArguments(args);
-
-			return f;
-		}
-
-		@Override
-		public void onCreate(Bundle savedInstanceState) {
-			// TODO Auto-generated method stub
-			super.onCreate(savedInstanceState);
-			mName = getArguments() != null ? getArguments().getString("name")
-					: "";
-			mCategories = getArguments() != null ? getArguments().getString(
-					"categories") : "";
-			mOpenTime = getArguments() != null ? getArguments().getString(
-					"opentime") : "";
-			mAddress = getArguments() != null ? getArguments().getString(
-					"address") : "";
-			mPhotos = getArguments() != null ? getArguments()
-					.getStringArrayList("photos") : null;
-			mPhotosDesc = getArguments() != null ? getArguments()
-					.getStringArrayList("photos_desc") : null;
-			mDescription = getArguments() != null ? getArguments().getString(
-					"description") : "";
-		}
-
-		@Override
-		public View onCreateView(LayoutInflater inflater, ViewGroup container,
-				Bundle savedInstanceState) {
-			// TODO Auto-generated method stub
-			setRetainInstance(true);
-			View view = inflater.inflate(R.layout.fragment_main_pager,
-					container, false);
-			TextView nameTv = (TextView) view
-					.findViewById(R.id.main_pager_name);
-			nameTv.setText(mName);
-			TextView categoriesTv = (TextView) view
-					.findViewById(R.id.main_pager_categories);
-			categoriesTv.setText(mCategories);
-			TextView openTimeTv = (TextView) view
-					.findViewById(R.id.main_pager_openhour);
-			openTimeTv.setText(mOpenTime);
-			TextView addressTv = (TextView) view
-					.findViewById(R.id.main_pager_address);
-			addressTv.setText(mAddress);
-			if (mPhotos.size() != 0) {
-				ImageView firstIv = (ImageView) view
-						.findViewById(R.id.main_pager_first_photo);
-				new ImageLoader(firstIv).execute(mPhotos.get(0));
-
-				if (mPhotos.size() != 1) {
-					ImageView secondIv = (ImageView) view
-							.findViewById(R.id.main_pager_second_photo);
-					new ImageLoader(secondIv).execute(mPhotos.get(1));
+				item = new HashMap<String, String>();
+				item.put(BaseBuilding.Fields.PK.getValue(),
+						String.valueOf(temp.getPk()));
+				item.put(BaseBuilding.Fields.NAME.getValue(), temp.getName());
+				item.put(BaseBuilding.Fields.CATEGPROES.getValue(),
+						Utils.stringJoiner(temp.getCategories(), ", "));
+				item.put(DISTANCE_TAG, String.valueOf(distance));
+				data.add(item);
+			}
+			Collections.sort(data, new Comparator<Map<String, String>>() {
+				@Override
+				public int compare(Map<String, String> lhs,
+						Map<String, String> rhs) {
+					// TODO Auto-generated method stub
+					double ld = Double.parseDouble(lhs.get(DISTANCE_TAG));
+					double rd = Double.parseDouble(rhs.get(DISTANCE_TAG));
+					return ld > rd ? 1 : (ld < rd ? -1 : 0);
 				}
-			}
-			TextView photoTitleTv = (TextView) view
-					.findViewById(R.id.main_pager_photos_title);
-			photoTitleTv.setText(mPhotos.size() + " photos");
-			photoTitleTv.setOnClickListener(this);
+			});
 
-			TextView descriptionTv = (TextView) view
-					.findViewById(R.id.main_pager_description);
-			descriptionTv.setText(mDescription);
-			return view;
+			// Beatify the distance data
+			for (Map<String, String> m : data) {
+				m.put(DISTANCE_TAG, Double.valueOf(m.get(DISTANCE_TAG))
+						.intValue() + "m");
+			}
+			return data;
 		}
 
 		@Override
-		public void onClick(View arg0) {
+		public void onClick(View v) {
 			// TODO Auto-generated method stub
-			Intent intent = new Intent(getActivity(), ImagePagerActivity.class);
-			intent.putExtra(Extra.IMAGES,
-					mPhotos.toArray(new String[mPhotos.size()]));
-			intent.putExtra(Extra.IMAGES_DESC,
-					mPhotosDesc.toArray(new String[mPhotosDesc.size()]));
-			startActivity(intent);
+			ListFragment mNearbyListFragment = (ListFragment) getSupportFragmentManager()
+					.findFragmentByTag(NEARBY_FRAGMENT_TAG);
+
+			if (mNearbyListFragment == null)
+				mNearbyListFragment = new NearbyListFragment();
+
+			mNearbyListFragment.setListAdapter(new SimpleAdapter(
+					getApplicationContext(), generateNearbyData(),
+					R.layout.nearby_list_item, new String[] {
+							BaseBuilding.Fields.NAME.getValue(),
+							BaseBuilding.Fields.CATEGPROES.getValue(),
+							DISTANCE_TAG, BaseBuilding.Fields.PK.getValue() },
+					new int[] { R.id.nearby_list_item_name,
+							R.id.nearby_list_item_categories,
+							R.id.nearby_list_item_distance,
+							R.id.nearby_list_item_pk }));
+
+			startNewListFragment(mNearbyListFragment, NEARBY_FRAGMENT_TAG);
 		}
-	}
-
-	public static class SearchListFragment extends ListFragment {
 
 	}
+	
+	private class ToviewButtonListener implements OnClickListener {
+		
+		
 
-	@Override
-	public void onPageScrollStateChanged(int arg0) {
-		// TODO Auto-generated method stub
+		@Override
+		public void onClick(View v) {
+			// TODO Auto-generated method stub
+			ToViewListFragment mToViewListFragment = (ToViewListFragment) getSupportFragmentManager()
+					.findFragmentByTag(TOVIEW_FRAGMENT_TAG);
 
-	}
-
-	@Override
-	public void onPageScrolled(int arg0, float arg1, int arg2) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void onPageSelected(int arg0) {
-		// TODO Auto-generated method stub
-		mMap.animateCamera(CameraUpdateFactory.newLatLng(mMarkers.get(arg0)
-				.getPosition()));
-		activateMarker(mMarkers.get(arg0));
+			if (mToViewListFragment == null)
+				mToViewListFragment = new ToViewListFragment();
+			
+			mToViewListFragment.setAdapterData(mBuildings);
+				
+			startNewListFragment(mToViewListFragment, TOVIEW_FRAGMENT_TAG);
+		}
+		
 	}
 
 	@Override
-	public boolean onMarkerClick(Marker arg0) {
+	public void onSearchItemClicked(int pk) {
 		// TODO Auto-generated method stub
-		mSlidingUpPanelLayout.showPane();
-		mPager.setCurrentItem(mMarkers.indexOf(arg0));
-		activateMarker(arg0);
-		return false;
+		if (getSupportFragmentManager().getBackStackEntryCount() != 0) {
+			getSupportFragmentManager().popBackStack();
+			mSearchEdit.clearFocus();
+			mIsSlidingPaneShown = true;
+			setMainToolViewVisible(true);
+		}
+		activateMarker(pk);
 	}
 
-	private void activateMarker(Marker marker) {
+	@Override
+	public void onMainPagerSelected(int pk) {
+		// TODO Auto-generated method stub
+		activateMarker(pk);
+	}
+
+	private void activateMarker(int pk) {
 		if (mActivedMarker != null)
 			mActivedMarker.setIcon(BitmapDescriptorFactory
 					.fromResource(R.drawable.point));
+		Marker marker = mMarkers.get(pk);
 		marker.setIcon(BitmapDescriptorFactory
 				.fromResource(R.drawable.location));
+		mMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
 		mActivedMarker = marker;
+
+		mMainPagerAdapter.setCurrentItemByPk(pk);
+	}
+
+	private void setMainToolViewVisible(boolean b) {
+		if (b) {
+			mTitleBar.setVisibility(View.VISIBLE);
+			if (mIsSlidingPaneShown)
+				mSlidingUpPanelLayout.showPane();
+		} else {
+			mTitleBar.setVisibility(View.GONE);
+			mSlidingUpPanelLayout.collapsePane();
+			mSlidingUpPanelLayout.hidePane();
+		}
+	}
+
+	private void startNewListFragment(ListFragment mListFragment, String tag) {
+		if (!mPrepared) {
+			Toast toast = Toast.makeText(getApplicationContext(),
+					"Loading data ...", Toast.LENGTH_SHORT);
+			toast.show();
+		} else {
+			setMainToolViewVisible(false);
+
+			FragmentTransaction fragmentTransaction = getSupportFragmentManager()
+					.beginTransaction();
+			fragmentTransaction.replace(R.id.main_content, mListFragment, tag);
+			fragmentTransaction.addToBackStack(null);
+			fragmentTransaction.commit();
+		}
 	}
 }
