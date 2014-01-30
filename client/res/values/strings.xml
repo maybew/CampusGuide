@@ -15,4 +15,8 @@
 	<string name="to_view_remove_all_btn">Remove all</string>
 	<string name="main_pager_add_toview">Add to view</string>
 	<string name="main_pager_toview_list">To view list</string>
+	<string name="loading_data">Loading data …</string>
+	<string name="added_to_toview">Add successfully, please check in to view list</string>
+	<string name="add_to_toview_failed">Failed, this place already exist in to view list</string>
+	<string name="exit_navi">Exit navigation</string>
 </resources>

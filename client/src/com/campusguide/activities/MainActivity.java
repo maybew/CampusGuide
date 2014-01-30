@@ -15,25 +15,22 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.app.Activity;
-import android.content.Context;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.ListFragment;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
-import android.util.Log;
+import android.text.Html;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.webkit.WebView.FindListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -43,17 +40,19 @@ import android.widget.Toast;
 
 import com.campusguide.R;
 import com.campusguide.objects.BaseBuilding;
+import com.campusguide.route.Route;
 import com.campusguide.route.Routing;
 import com.campusguide.route.RoutingListener;
+import com.campusguide.route.Segment;
 import com.campusguide.utilities.JSONLoader;
 import com.campusguide.utilities.Utils;
 import com.campusguide.views.SlidingUpPanelLayout;
 import com.campusguide.adapters.MainPagerAdapter;
-import com.campusguide.fragments.MainPagerFragment;
 import com.campusguide.fragments.NearbyListFragment;
 import com.campusguide.fragments.SearchListFragment;
-import com.campusguide.fragments.SearchListFragment.OnSearchItemClickedListener;
+import com.campusguide.fragments.MainPagerFragment.MainPagerListener;
 import com.campusguide.fragments.ToViewListFragment;
+import com.campusguide.fragments.ToViewListFragment.ToViewListFragmentListener;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient.ConnectionCallbacks;
 import com.google.android.gms.common.GooglePlayServicesClient.OnConnectionFailedListener;
@@ -64,6 +63,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMyLocationButtonClickListener;
+import com.google.android.gms.maps.GoogleMap.OnMyLocationChangeListener;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -72,6 +72,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.android.PolyUtil;
 import com.google.maps.android.SphericalUtil;
 
 public class MainActivity extends FragmentActivity implements
@@ -79,8 +80,12 @@ public class MainActivity extends FragmentActivity implements
 		OnMyLocationButtonClickListener, OnMarkerClickListener,
 		JSONLoader.OnJSONLoadListener, RoutingListener,
 		SearchListFragment.OnSearchItemClickedListener,
-		MainPagerAdapter.OnMainPagerSelectedListener {
+		MainPagerAdapter.OnMainPagerSelectedListener, MainPagerListener,
+		ToViewListFragmentListener, OnMyLocationChangeListener {
 
+	public static final int MAP_MODE = 0;
+	public static final int NAVI_MODE = 1;
+	public static final int INFO_MODE = 2;
 	private static final String MAIN_ACTIVITY_TAG = "main_activity";
 	private static final String MAP_FRAGMENT_TAG = "map_fragment";
 	private static final String SEARCH_FRAGMENT_TAG = "search_fragment";
@@ -107,6 +112,12 @@ public class MainActivity extends FragmentActivity implements
 	private ImageButton mNearbyButton;
 	private ImageButton mToviewButton;
 
+	private LinearLayout mNaviBar;
+	private TextView mNaviInstruText;
+	private TextView mNaviDisText;
+	private TextView mNaviTimeText;
+	private Button mNaviExitBtn;
+
 	private MainPagerAdapter mMainPagerAdapter;
 
 	private SupportMapFragment mapFragment;
@@ -116,7 +127,10 @@ public class MainActivity extends FragmentActivity implements
 	// private SearchListFragment mSearchListFragment;
 
 	private static final List<BaseBuilding> mBuildings = new ArrayList<BaseBuilding>();
+	private static final List<BaseBuilding> mToViewList = new ArrayList<BaseBuilding>();
 	private static final SparseArray<Marker> mMarkers = new SparseArray<Marker>();
+	private static final List<Segment> mSegments = new ArrayList<Segment>();
+	private static final List<Marker> mNaviMarkers = new ArrayList<Marker>();
 	private static boolean mPrepared = false;
 	private static boolean mIsSlidingPaneShown = false;
 	private static Polyline mActivedPolyLine = null;
@@ -154,6 +168,13 @@ public class MainActivity extends FragmentActivity implements
 		mNearbyButton.setOnClickListener(new NearbyButtonListener());
 		mToviewButton = (ImageButton) findViewById(R.id.main_toview_btn);
 		mToviewButton.setOnClickListener(new ToviewButtonListener());
+
+		mNaviBar = (LinearLayout) findViewById(R.id.main_navi_bar);
+		mNaviDisText = (TextView) findViewById(R.id.navi_distance_text);
+		mNaviExitBtn = (Button) findViewById(R.id.navi_exit_btn);
+		mNaviInstruText = (TextView) findViewById(R.id.navi_instruction_text);
+		mNaviTimeText = (TextView) findViewById(R.id.navi_time_text);
+		mNaviExitBtn.setOnClickListener(new ExitNaviButtonListener());
 
 		// It isn't possible to set a fragment's id programmatically so we set a
 		// tag instead and
@@ -216,7 +237,7 @@ public class MainActivity extends FragmentActivity implements
 		// TODO Auto-generated method stub
 		if (getSupportFragmentManager().getBackStackEntryCount() != 0) {
 			getSupportFragmentManager().popBackStack();
-			setMainToolViewVisible(true);
+			switchMode(MAP_MODE);
 		} else {
 			super.onBackPressed();
 		}
@@ -232,6 +253,7 @@ public class MainActivity extends FragmentActivity implements
 			if (mMap != null) {
 				mMap.setMyLocationEnabled(true);
 				mMap.setOnMyLocationButtonClickListener(this);
+				mMap.setOnMyLocationChangeListener(this);
 				mMap.setOnMarkerClickListener(this);
 				mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(UWL_CENTER,
 						UWL_CENTER_ZOOM));
@@ -304,14 +326,14 @@ public class MainActivity extends FragmentActivity implements
 	@Override
 	public void onLocationChanged(Location arg0) {
 		// TODO Auto-generated method stub
-		/*
-		 * if (!mPrepared) return; if (mActivedPolyLine != null) return; LatLng
-		 * start = new LatLng(arg0.getLatitude(), arg0.getLongitude()); Routing
-		 * routing = new Routing(Routing.TravelMode.WALKING);
-		 * routing.registerListener(this); routing.execute(start,
-		 * mMarkers.get(0).getPosition(), mMarkers.get(1) .getPosition(),
-		 * mMarkers.get(2).getPosition());
-		 */
+		if(mActivedPolyLine == null)
+			return;
+		for (int i = 0, n = mSegments.size(); i < n; i++) {
+			if (PolyUtil.isLocationOnPath(
+					new LatLng(arg0.getLatitude(), arg0.getLongitude()),
+					mSegments.get(i).getPoints(), false))
+				setNaviInfo(mSegments.get(i));
+		}
 	}
 
 	@Override
@@ -335,26 +357,38 @@ public class MainActivity extends FragmentActivity implements
 	@Override
 	public void onRoutingFailure() {
 		// TODO Auto-generated method stub
-
+		Toast toast = Toast.makeText(getApplicationContext(),
+				R.string.add_to_toview_failed, Toast.LENGTH_SHORT);
+		toast.show();
 	}
 
 	@Override
 	public void onRoutingStart() {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
-	public void onRoutingSuccess(PolylineOptions mPolyOptions) {
+	public void onRoutingSuccess(Route result) {
 		// TODO Auto-generated method stub
-		if (mActivedPolyLine != null)
-			mActivedPolyLine.remove();
+
+		clearNavigation();
+
+		// Add line
 		PolylineOptions polyoptions = new PolylineOptions();
 		polyoptions.color(Color.HSVToColor(100, new float[] { 200, 1, 1 }));
 		polyoptions.width(10);
-		polyoptions.addAll(mPolyOptions.getPoints());
+		polyoptions.addAll(result.getPoints());
 		mActivedPolyLine = mMap.addPolyline(polyoptions);
 
+		// Add route markers
+		mSegments.addAll(result.getSegments());
+		for (int i = 0, n = mSegments.size(); i < n; i++)
+			mNaviMarkers
+					.add(mMap.addMarker(new MarkerOptions().position(
+							mSegments.get(i).startPoint()).icon(
+							BitmapDescriptorFactory
+									.fromResource(R.drawable.navi_dot))));
+		setNaviInfo(mSegments.get(0));
 	}
 
 	private class DrawerItemClickListener implements
@@ -370,7 +404,7 @@ public class MainActivity extends FragmentActivity implements
 				mMap.setMapType(MAP_TYPE_HYBRID);
 				break;
 			case 2:
-				mSlidingUpPanelLayout.hidePane();
+
 				break;
 			case 3:
 				mSlidingUpPanelLayout.showPane();
@@ -494,10 +528,8 @@ public class MainActivity extends FragmentActivity implements
 		}
 
 	}
-	
+
 	private class ToviewButtonListener implements OnClickListener {
-		
-		
 
 		@Override
 		public void onClick(View v) {
@@ -507,12 +539,23 @@ public class MainActivity extends FragmentActivity implements
 
 			if (mToViewListFragment == null)
 				mToViewListFragment = new ToViewListFragment();
-			
-			mToViewListFragment.setAdapterData(mBuildings);
-				
+
+			mToViewListFragment.setAdapterData(mToViewList);
+
 			startNewListFragment(mToViewListFragment, TOVIEW_FRAGMENT_TAG);
 		}
-		
+
+	}
+
+	private class ExitNaviButtonListener implements OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+			// TODO Auto-generated method stub
+			clearNavigation();
+			switchMode(MAP_MODE);
+		}
+
 	}
 
 	@Override
@@ -522,7 +565,7 @@ public class MainActivity extends FragmentActivity implements
 			getSupportFragmentManager().popBackStack();
 			mSearchEdit.clearFocus();
 			mIsSlidingPaneShown = true;
-			setMainToolViewVisible(true);
+			switchMode(MAP_MODE);
 		}
 		activateMarker(pk);
 	}
@@ -531,6 +574,45 @@ public class MainActivity extends FragmentActivity implements
 	public void onMainPagerSelected(int pk) {
 		// TODO Auto-generated method stub
 		activateMarker(pk);
+	}
+
+	@Override
+	public void onAddToViewClicked(int pk) {
+		// TODO Auto-generated method stub
+		BaseBuilding b = findBuildingByPk(pk);
+		if (!mToViewList.contains(b)) {
+			mToViewList.add(b);
+			Toast toast = Toast.makeText(getApplicationContext(),
+					R.string.added_to_toview, Toast.LENGTH_SHORT);
+			toast.show();
+		} else {
+			Toast toast = Toast.makeText(getApplicationContext(),
+					R.string.add_to_toview_failed, Toast.LENGTH_SHORT);
+			toast.show();
+		}
+	}
+
+	@Override
+	public void onGoClicked(int pk) {
+		// TODO Auto-generated method stub
+		List<BaseBuilding> list = new ArrayList<BaseBuilding>();
+		list.add(findBuildingByPk(pk));
+		switchMode(NAVI_MODE);
+		startRouting(list);
+	}
+
+	@Override
+	public void onToViewListClicked() {
+		// TODO Auto-generated method stub
+		ToViewListFragment mToViewListFragment = (ToViewListFragment) getSupportFragmentManager()
+				.findFragmentByTag(TOVIEW_FRAGMENT_TAG);
+
+		if (mToViewListFragment == null)
+			mToViewListFragment = new ToViewListFragment();
+
+		mToViewListFragment.setAdapterData(mToViewList);
+
+		startNewListFragment(mToViewListFragment, TOVIEW_FRAGMENT_TAG);
 	}
 
 	private void activateMarker(int pk) {
@@ -546,31 +628,123 @@ public class MainActivity extends FragmentActivity implements
 		mMainPagerAdapter.setCurrentItemByPk(pk);
 	}
 
-	private void setMainToolViewVisible(boolean b) {
-		if (b) {
-			mTitleBar.setVisibility(View.VISIBLE);
-			if (mIsSlidingPaneShown)
-				mSlidingUpPanelLayout.showPane();
-		} else {
-			mTitleBar.setVisibility(View.GONE);
-			mSlidingUpPanelLayout.collapsePane();
-			mSlidingUpPanelLayout.hidePane();
-		}
-	}
-
 	private void startNewListFragment(ListFragment mListFragment, String tag) {
 		if (!mPrepared) {
 			Toast toast = Toast.makeText(getApplicationContext(),
-					"Loading data ...", Toast.LENGTH_SHORT);
+					R.string.loading_data, Toast.LENGTH_SHORT);
 			toast.show();
 		} else {
-			setMainToolViewVisible(false);
+			switchMode(INFO_MODE);
 
 			FragmentTransaction fragmentTransaction = getSupportFragmentManager()
 					.beginTransaction();
 			fragmentTransaction.replace(R.id.main_content, mListFragment, tag);
 			fragmentTransaction.addToBackStack(null);
 			fragmentTransaction.commit();
+		}
+	}
+
+	private void startRouting(List<BaseBuilding> routeList) {
+		LatLng[] array = new LatLng[routeList.size() + 1];
+		LatLng start = new LatLng(mMap.getMyLocation().getLatitude(), mMap
+				.getMyLocation().getLongitude());
+		array[0] = start;
+
+		LatLng dest = null;
+		LatLng temp = null;
+		double distance = Double.NEGATIVE_INFINITY;
+		double tempDistance;
+		int i = 1;
+		for (BaseBuilding b : routeList) {
+			temp = new LatLng(b.getLat(), b.getLng());
+			if ((tempDistance = SphericalUtil.computeDistanceBetween(start,
+					temp)) > distance) {
+				if (dest == null) {
+					dest = temp;
+				} else {
+					array[i] = dest;
+					dest = temp;
+					i++;
+				}
+				distance = tempDistance;
+			} else {
+				array[i] = temp;
+				i++;
+			}
+		}
+		array[array.length - 1] = dest;
+		Routing routing = new Routing(Routing.TravelMode.WALKING);
+		routing.registerListener(this);
+		routing.execute(array);
+	}
+
+	private BaseBuilding findBuildingByPk(int pk) {
+		for (int i = 0, n = mBuildings.size(); i < n; i++)
+			if (mBuildings.get(i).getPk() == pk)
+				return mBuildings.get(i);
+		return null;
+	}
+
+	@Override
+	public void OnGoAllClicked(List<BaseBuilding> toViewList) {
+		// TODO Auto-generated method stub
+		if (getSupportFragmentManager().getBackStackEntryCount() != 0) {
+			getSupportFragmentManager().popBackStack();
+			switchMode(NAVI_MODE);
+		}
+		startRouting(toViewList);
+	}
+
+	private void clearNavigation() {
+		if (mActivedPolyLine != null) {
+			mActivedPolyLine.remove();
+			mActivedPolyLine = null;
+		}
+		for (int i = 0, n = mNaviMarkers.size(); i < n; i++)
+			mNaviMarkers.get(i).remove();
+		mNaviMarkers.clear();
+		mSegments.clear();
+	}
+
+	private void setNaviInfo(Segment segment) {
+		mNaviInstruText.setText(Html.fromHtml(segment.getInstruction()));
+		mNaviDisText.setText(segment.getDistanceText());
+		mNaviTimeText.setText(segment.getTimeText());
+	}
+
+	private void switchMode(int mode) {
+		switch (mode) {
+		case MAP_MODE:
+			mNaviBar.setVisibility(View.GONE);
+			mTitleBar.setVisibility(View.VISIBLE);
+			if (mIsSlidingPaneShown)
+				mSlidingUpPanelLayout.showPane();
+			break;
+		case INFO_MODE:
+			mTitleBar.setVisibility(View.GONE);
+			mNaviBar.setVisibility(View.GONE);
+			mSlidingUpPanelLayout.collapsePane();
+			mSlidingUpPanelLayout.collapsePane();
+			mSlidingUpPanelLayout.hidePane();
+			break;
+		case NAVI_MODE:
+			mTitleBar.setVisibility(View.GONE);
+			mNaviBar.setVisibility(View.VISIBLE);
+			if (mIsSlidingPaneShown)
+				mSlidingUpPanelLayout.showPane();
+		}
+	}
+
+	@Override
+	public void onMyLocationChange(Location arg0) {
+		// TODO Auto-generated method stub
+		if(mActivedPolyLine == null)
+			return;
+		for (int i = 0, n = mSegments.size(); i < n; i++) {
+			if (PolyUtil.isLocationOnPath(
+					new LatLng(arg0.getLatitude(), arg0.getLongitude()),
+					mSegments.get(i).getPoints(), false))
+				setNaviInfo(mSegments.get(i));
 		}
 	}
 }

@@ -14,7 +14,7 @@ import android.os.AsyncTask;
 
 public abstract class BaseLoader<Params, Progress, Result> extends
 		AsyncTask<Params, Progress, Result> {
-	private final static String BASE_URL = "http://96.42.50.149:8000";
+	private final static String BASE_URL = "http://10.0.3.2:8000";
 
 	private HttpClient httpClient;
 
