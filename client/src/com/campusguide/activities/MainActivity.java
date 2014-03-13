@@ -18,6 +18,7 @@ import org.json.JSONObject;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.ListFragment;
@@ -27,7 +28,6 @@ import android.text.Html;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.webkit.WebView.FindListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -46,8 +46,10 @@ import com.campusguide.route.RoutingListener;
 import com.campusguide.route.Segment;
 import com.campusguide.utilities.JSONLoader;
 import com.campusguide.utilities.Utils;
+import com.campusguide.views.ARFrameView;
 import com.campusguide.views.SlidingUpPanelLayout;
 import com.campusguide.adapters.MainPagerAdapter;
+import com.campusguide.fragments.ARFragment;
 import com.campusguide.fragments.NearbyListFragment;
 import com.campusguide.fragments.SearchListFragment;
 import com.campusguide.fragments.MainPagerFragment.MainPagerListener;
@@ -83,48 +85,81 @@ public class MainActivity extends FragmentActivity implements
 		MainPagerAdapter.OnMainPagerSelectedListener, MainPagerListener,
 		ToViewListFragmentListener, OnMyLocationChangeListener {
 
+	/**
+	 *	Mode identifier
+	 *	Map mode, Navigation mode, Information mode, Pre_Navigarion mode.
+	 */
 	public static final int MAP_MODE = 0;
 	public static final int NAVI_MODE = 1;
 	public static final int INFO_MODE = 2;
-	private static final String MAIN_ACTIVITY_TAG = "main_activity";
+	public static final int PRE_NAVI_MODE = 3;
+	
+	/**
+	 * Fragment tag
+	 * Map fragment, Search fragment, Nearby, To view fragment, Augmented Reality fragment
+	 */
 	private static final String MAP_FRAGMENT_TAG = "map_fragment";
 	private static final String SEARCH_FRAGMENT_TAG = "search_fragment";
 	private static final String NEARBY_FRAGMENT_TAG = "nearby_fragment";
 	private static final String TOVIEW_FRAGMENT_TAG = "toview_fragment";
+	private static final String AR_FRAGMENT_TAG = "ar_fragment";
+	
+	/**
+	 * Initial map view configuration
+	 * Define the map center location, zoom level.
+	 */
 	private static final LatLng UWL_CENTER = new LatLng(43.81604278,
 			-91.23061895);
 	private static final int UWL_CENTER_ZOOM = 15;
+	
+	/**
+	 * Define drawer items
+	 */
 	private static final String titles[] = { "Normal", "Satellite",
-			"Hide Panel", "Show Panel" };
+			"Camera View" };
 
+	/**
+	 * My location configuration
+	 */
 	private static final LocationRequest REQUEST = LocationRequest.create()
 			.setInterval(5000) // 5 seconds
 			.setFastestInterval(16) // 16ms = 60fps
 			.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
+	// Drawer
 	private DrawerLayout mDrawerLayout;
 	private ListView mDrawerList;
 	private SlidingUpPanelLayout mSlidingUpPanelLayout;
 	private ViewPager mPager;
 
+	// Search bar
 	private LinearLayout mTitleBar;
 	private TextView mSearchEdit;
 	private ImageButton mNearbyButton;
 	private ImageButton mToviewButton;
 
+	// Pre_Navigation bar
+	private LinearLayout mPreNaviBar;
+	private TextView mPreNaviDisText;
+	private TextView mPreNaviTimeText;
+	private Button mPreStartBtn;
+	private Button mPreExitBtn;
+	
+	// Navigation bar
 	private LinearLayout mNaviBar;
 	private TextView mNaviInstruText;
 	private TextView mNaviDisText;
 	private TextView mNaviTimeText;
 	private Button mNaviExitBtn;
 
+	// Sliding up panel adapter
 	private MainPagerAdapter mMainPagerAdapter;
 
+	// Map view
 	private SupportMapFragment mapFragment;
 	private GoogleMap mMap;
 	private UiSettings mUiSettings;
 	private LocationClient mLocationClient;
-	// private SearchListFragment mSearchListFragment;
 
 	private static final List<BaseBuilding> mBuildings = new ArrayList<BaseBuilding>();
 	private static final List<BaseBuilding> mToViewList = new ArrayList<BaseBuilding>();
@@ -135,6 +170,7 @@ public class MainActivity extends FragmentActivity implements
 	private static boolean mIsSlidingPaneShown = false;
 	private static Polyline mActivedPolyLine = null;
 	private static Marker mActivedMarker = null;
+	private static Route route;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -169,6 +205,14 @@ public class MainActivity extends FragmentActivity implements
 		mToviewButton = (ImageButton) findViewById(R.id.main_toview_btn);
 		mToviewButton.setOnClickListener(new ToviewButtonListener());
 
+		mPreNaviBar = (LinearLayout) findViewById(R.id.main_pre_navi_bar);
+		mPreNaviDisText = (TextView) findViewById(R.id.pre_navi_distance_text);
+		mPreNaviTimeText = (TextView) findViewById(R.id.pre_navi_time_text);
+		mPreStartBtn = (Button) findViewById(R.id.pre_navi_start_btn);
+		mPreStartBtn.setOnClickListener(new StartNaviButtonListener());                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+		mPreExitBtn = (Button) findViewById(R.id.pre_navi_exit_btn);
+		mPreExitBtn.setOnClickListener(new ExitNaviButtonListener());
+		
 		mNaviBar = (LinearLayout) findViewById(R.id.main_navi_bar);
 		mNaviDisText = (TextView) findViewById(R.id.navi_distance_text);
 		mNaviExitBtn = (Button) findViewById(R.id.navi_exit_btn);
@@ -324,9 +368,9 @@ public class MainActivity extends FragmentActivity implements
 	}
 
 	@Override
-	public void onLocationChanged(Location arg0) {
+	public void onMyLocationChange(Location arg0) {
 		// TODO Auto-generated method stub
-		if(mActivedPolyLine == null)
+		if (mActivedPolyLine == null)
 			return;
 		for (int i = 0, n = mSegments.size(); i < n; i++) {
 			if (PolyUtil.isLocationOnPath(
@@ -334,6 +378,20 @@ public class MainActivity extends FragmentActivity implements
 					mSegments.get(i).getPoints(), false))
 				setNaviInfo(mSegments.get(i));
 		}
+	}
+	
+
+	@Override
+	public void onLocationChanged(Location arg0) {
+		// TODO Auto-generated method stub
+		ARFrameView.setStartLocation(arg0);
+		/*
+		 * if(mActivedPolyLine == null) return; for (int i = 0, n =
+		 * mSegments.size(); i < n; i++) { if (PolyUtil.isLocationOnPath( new
+		 * LatLng(arg0.getLatitude(), arg0.getLongitude()),
+		 * mSegments.get(i).getPoints(), false)) setNaviInfo(mSegments.get(i));
+		 * }
+		 */
 	}
 
 	@Override
@@ -379,16 +437,11 @@ public class MainActivity extends FragmentActivity implements
 		polyoptions.width(10);
 		polyoptions.addAll(result.getPoints());
 		mActivedPolyLine = mMap.addPolyline(polyoptions);
-
-		// Add route markers
-		mSegments.addAll(result.getSegments());
-		for (int i = 0, n = mSegments.size(); i < n; i++)
-			mNaviMarkers
-					.add(mMap.addMarker(new MarkerOptions().position(
-							mSegments.get(i).startPoint()).icon(
-							BitmapDescriptorFactory
-									.fromResource(R.drawable.navi_dot))));
-		setNaviInfo(mSegments.get(0));
+		mPreNaviTimeText.setText(result.getDuration());
+		mPreNaviDisText.setText(result.getLength());
+		
+		route = result;
+		
 	}
 
 	private class DrawerItemClickListener implements
@@ -404,10 +457,13 @@ public class MainActivity extends FragmentActivity implements
 				mMap.setMapType(MAP_TYPE_HYBRID);
 				break;
 			case 2:
+				ARFragment mARFragment = (ARFragment) getSupportFragmentManager()
+						.findFragmentByTag(AR_FRAGMENT_TAG);
 
-				break;
-			case 3:
-				mSlidingUpPanelLayout.showPane();
+				if (mARFragment == null)
+					mARFragment = ARFragment.newInstance(mBuildings);
+
+				startNewListFragment(mARFragment, AR_FRAGMENT_TAG);
 				break;
 			}
 			mDrawerLayout.closeDrawers();
@@ -553,9 +609,29 @@ public class MainActivity extends FragmentActivity implements
 		public void onClick(View v) {
 			// TODO Auto-generated method stub
 			clearNavigation();
+			showAllMarkers();
 			switchMode(MAP_MODE);
 		}
 
+	}
+	
+	private class StartNaviButtonListener implements OnClickListener {
+
+		@Override
+		public void onClick(View arg0) {
+			// TODO Auto-generated method stub
+			switchMode(NAVI_MODE);
+			// Add route markers
+			mSegments.addAll(route.getSegments());
+			for (int i = 0, n = mSegments.size(); i < n; i++)
+				mNaviMarkers
+						.add(mMap.addMarker(new MarkerOptions().position(
+								mSegments.get(i).startPoint()).icon(
+								BitmapDescriptorFactory
+										.fromResource(R.drawable.navi_dot))));
+			setNaviInfo(mSegments.get(0));
+		}
+		
 	}
 
 	@Override
@@ -597,7 +673,7 @@ public class MainActivity extends FragmentActivity implements
 		// TODO Auto-generated method stub
 		List<BaseBuilding> list = new ArrayList<BaseBuilding>();
 		list.add(findBuildingByPk(pk));
-		switchMode(NAVI_MODE);
+		switchMode(PRE_NAVI_MODE);
 		startRouting(list);
 	}
 
@@ -628,7 +704,7 @@ public class MainActivity extends FragmentActivity implements
 		mMainPagerAdapter.setCurrentItemByPk(pk);
 	}
 
-	private void startNewListFragment(ListFragment mListFragment, String tag) {
+	private void startNewListFragment(Fragment mListFragment, String tag) {
 		if (!mPrepared) {
 			Toast toast = Toast.makeText(getApplicationContext(),
 					R.string.loading_data, Toast.LENGTH_SHORT);
@@ -655,7 +731,9 @@ public class MainActivity extends FragmentActivity implements
 		double distance = Double.NEGATIVE_INFINITY;
 		double tempDistance;
 		int i = 1;
+		hideAllMarkers();
 		for (BaseBuilding b : routeList) {
+			mMarkers.get(b.getPk()).setVisible(true);
 			temp = new LatLng(b.getLat(), b.getLng());
 			if ((tempDistance = SphericalUtil.computeDistanceBetween(start,
 					temp)) > distance) {
@@ -690,7 +768,7 @@ public class MainActivity extends FragmentActivity implements
 		// TODO Auto-generated method stub
 		if (getSupportFragmentManager().getBackStackEntryCount() != 0) {
 			getSupportFragmentManager().popBackStack();
-			switchMode(NAVI_MODE);
+			switchMode(PRE_NAVI_MODE);
 		}
 		startRouting(toViewList);
 	}
@@ -716,6 +794,7 @@ public class MainActivity extends FragmentActivity implements
 		switch (mode) {
 		case MAP_MODE:
 			mNaviBar.setVisibility(View.GONE);
+			mPreNaviBar.setVisibility(View.GONE);
 			mTitleBar.setVisibility(View.VISIBLE);
 			if (mIsSlidingPaneShown)
 				mSlidingUpPanelLayout.showPane();
@@ -723,28 +802,33 @@ public class MainActivity extends FragmentActivity implements
 		case INFO_MODE:
 			mTitleBar.setVisibility(View.GONE);
 			mNaviBar.setVisibility(View.GONE);
+			mPreNaviBar.setVisibility(View.GONE);
 			mSlidingUpPanelLayout.collapsePane();
 			mSlidingUpPanelLayout.collapsePane();
 			mSlidingUpPanelLayout.hidePane();
 			break;
 		case NAVI_MODE:
 			mTitleBar.setVisibility(View.GONE);
+			mPreNaviBar.setVisibility(View.GONE);
 			mNaviBar.setVisibility(View.VISIBLE);
+			if (mIsSlidingPaneShown)
+				mSlidingUpPanelLayout.showPane();
+			break;
+		case PRE_NAVI_MODE:
+			mTitleBar.setVisibility(View.GONE);
+			mPreNaviBar.setVisibility(View.VISIBLE);
 			if (mIsSlidingPaneShown)
 				mSlidingUpPanelLayout.showPane();
 		}
 	}
 
-	@Override
-	public void onMyLocationChange(Location arg0) {
-		// TODO Auto-generated method stub
-		if(mActivedPolyLine == null)
-			return;
-		for (int i = 0, n = mSegments.size(); i < n; i++) {
-			if (PolyUtil.isLocationOnPath(
-					new LatLng(arg0.getLatitude(), arg0.getLongitude()),
-					mSegments.get(i).getPoints(), false))
-				setNaviInfo(mSegments.get(i));
-		}
+	private void hideAllMarkers() {
+		for(int i=0,n=mMarkers.size();i<n;++i)
+			mMarkers.get(mMarkers.keyAt(i)).setVisible(false);
+	}
+	
+	private void showAllMarkers() {
+		for(int i=0,n=mMarkers.size();i<n;++i)
+			mMarkers.get(mMarkers.keyAt(i)).setVisible(true);
 	}
 }

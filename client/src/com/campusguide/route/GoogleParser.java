@@ -45,48 +45,49 @@ public class GoogleParser extends XMLParser implements Parser {
                     final JSONObject jsonRoute = json.getJSONArray("routes").getJSONObject(0);
                     //Get the leg, only one leg as we don't support waypoints
                     for(int j=0, n=jsonRoute.getJSONArray("legs").length();j<n;j++) {
-                    final JSONObject leg = jsonRoute.getJSONArray("legs").getJSONObject(j);
-                    //Get the steps for this leg
-                    final JSONArray steps = leg.getJSONArray("steps");
-                    //Number of steps for use in for loop
-                    final int numSteps = steps.length();
-                    //Set the name of this route using the start & end addresses
-                    route.setName(leg.getString("start_address") + " to " + leg.getString("end_address"));
-                    //Get google's copyright notice (tos requirement)
-                    route.setCopyright(jsonRoute.getString("copyrights"));
-                    //Get the total length of the route.
-                    route.setLength(leg.getJSONObject("distance").getInt("value"));
-                    //Get any warnings provided (tos requirement)
-                    if (!jsonRoute.getJSONArray("warnings").isNull(0)) {
-                            route.setWarning(jsonRoute.getJSONArray("warnings").getString(0));
-                    }
-                    /* Loop through the steps, creating a segment for each one and
-                     * decoding any polylines found as we go to add to the route object's
-                     * map array. Using an explicit for loop because it is faster!
-                     */
-                    for (int i = 0; i < numSteps; i++) {
-                            //Get the individual step
-                            final JSONObject step = steps.getJSONObject(i);
-                            //Get the start position for this step and set it on the segment
-                            final JSONObject start = step.getJSONObject("start_location");
-                            final LatLng position = new LatLng(start.getDouble("lat"),
-                                    start.getDouble("lng"));
-                            segment.setPoint(position);
-                            //Set the length of this segment in metres
-                            final int length = step.getJSONObject("distance").getInt("value");
-                            distance += length;
-                            segment.setLength(length);
-                            segment.setDistance(distance/1000);
-                            segment.setDistanceText(step.getJSONObject("distance").getString("text"));
-                            segment.setTimeText(step.getJSONObject("duration").getString("text"));
-                            //Strip html from google directions and set as turn instruction
-                            segment.setInstruction(step.getString("html_instructions"));//.replaceAll("<(.*?)*>", ""));
-                            //Retrieve & decode this segment's polyline and add it to the route.
-                            segment.setPoints(PolyUtil.decode(step.getJSONObject("polyline").getString("points")));
-                            route.addPoints(segment.getPoints());
-                            //Push a copy of the segment to the route
-                            route.addSegment(segment.copy());
-                    }
+	                    final JSONObject leg = jsonRoute.getJSONArray("legs").getJSONObject(j);
+	                    //Get the steps for this leg
+	                    final JSONArray steps = leg.getJSONArray("steps");
+	                    //Number of steps for use in for loop
+	                    final int numSteps = steps.length();
+	                    //Set the name of this route using the start & end addresses
+	                    route.setName(leg.getString("start_address") + " to " + leg.getString("end_address"));
+	                    //Get google's copyright notice (tos requirement)
+	                    route.setCopyright(jsonRoute.getString("copyrights"));
+	                    //Get the total length of the route.
+	                    route.setLength(leg.getJSONObject("distance").getString("text"));
+	                    route.setDuration(leg.getJSONObject("duration").getString("text"));
+	                    //Get any warnings provided (tos requirement)
+	                    if (!jsonRoute.getJSONArray("warnings").isNull(0)) {
+	                            route.setWarning(jsonRoute.getJSONArray("warnings").getString(0));
+	                    }
+	                    /* Loop through the steps, creating a segment for each one and
+	                     * decoding any polylines found as we go to add to the route object's
+	                     * map array. Using an explicit for loop because it is faster!
+	                     */
+	                    for (int i = 0; i < numSteps; i++) {
+	                            //Get the individual step
+	                            final JSONObject step = steps.getJSONObject(i);
+	                            //Get the start position for this step and set it on the segment
+	                            final JSONObject start = step.getJSONObject("start_location");
+	                            final LatLng position = new LatLng(start.getDouble("lat"),
+	                                    start.getDouble("lng"));
+	                            segment.setPoint(position);
+	                            //Set the length of this segment in metres
+	                            final int length = step.getJSONObject("distance").getInt("value");
+	                            distance += length;
+	                            segment.setLength(length);
+	                            segment.setDistance(distance/1000);
+	                            segment.setDistanceText(step.getJSONObject("distance").getString("text"));
+	                            segment.setTimeText(step.getJSONObject("duration").getString("text"));
+	                            //Strip html from google directions and set as turn instruction
+	                            segment.setInstruction(step.getString("html_instructions"));//.replaceAll("<(.*?)*>", ""));
+	                            //Retrieve & decode this segment's polyline and add it to the route.
+	                            segment.setPoints(PolyUtil.decode(step.getJSONObject("polyline").getString("points")));
+	                            route.addPoints(segment.getPoints());
+	                            //Push a copy of the segment to the route
+	                            route.addSegment(segment.copy());
+	                    }
                     }
             } catch (JSONException e) {
                 Log.e("Routing Error",e.getMessage());

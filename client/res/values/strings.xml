@@ -18,5 +18,6 @@
 	<string name="loading_data">Loading data …</string>
 	<string name="added_to_toview">Add successfully, please check in to view list</string>
 	<string name="add_to_toview_failed">Failed, this place already exist in to view list</string>
-	<string name="exit_navi">Exit navigation</string>
+	<string name="exit_navi">Exit</string>
+	<string name="start_navi">Start</string>
 </resources>

@@ -13,7 +13,8 @@ public class Route {
     private String copyright;
     private String warning;
     private String country;
-    private int length;
+    private String length;
+    private String duration;
     private String polyline;
 
     public Route() {
@@ -100,15 +101,23 @@ public class Route {
     /**
      * @param length the length to set
      */
-    public void setLength(int length) {
+    public void setLength(String length) {
             this.length = length;
     }
 
     /**
      * @return the length
      */
-    public int getLength() {
+    public String getLength() {
             return length;
+    }
+    
+    public void setDuration(String duration) {
+    	this.duration = duration;
+    }
+    
+    public String getDuration() {
+    	return duration;
     }
 
 
