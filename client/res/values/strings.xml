@@ -20,4 +20,6 @@
 	<string name="add_to_toview_failed">Failed, this place already exist in to view list</string>
 	<string name="exit_navi">Exit</string>
 	<string name="start_navi">Start</string>
+	<string name="occupant">Building Occupant:</string>
+	<string name="event">Event:</string>
 </resources>

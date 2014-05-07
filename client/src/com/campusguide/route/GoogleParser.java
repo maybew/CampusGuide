@@ -4,9 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.google.android.gms.maps.model.LatLng;
 import com.google.maps.android.PolyUtil;
 
@@ -124,47 +121,4 @@ public class GoogleParser extends XMLParser implements Parser {
     }
     return sBuf.toString();
 }
-
-    /**
-     * Decode a polyline string into a list of GeoPoints.
-     * @param poly polyline encoded string to decode.
-     * @return the list of GeoPoints represented by this polystring.
-     */
-
-    private List<LatLng> decodePolyLine(final String poly) {
-            int len = poly.length();
-            int index = 0;
-            List<LatLng> decoded = new ArrayList<LatLng>();
-            int lat = 0;
-            int lng = 0;
-
-            while (index < len) {
-            int b;
-            int shift = 0;
-            int result = 0;
-            do {
-                    b = poly.charAt(index++) - 63;
-                    result |= (b & 0x1f) << shift;
-                    shift += 5;
-            } while (b >= 0x20);
-            int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-            lat += dlat;
-
-            shift = 0;
-            result = 0;
-            do {
-                    b = poly.charAt(index++) - 63;
-                    result |= (b & 0x1f) << shift;
-                    shift += 5;
-            } while (b >= 0x20);
-                    int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-                    lng += dlng;
-
-            decoded.add(new LatLng(
-                    lat/100000d, lng/100000d
-                    ));
-            }
-
-            return decoded;
-            }
 }

@@ -25,9 +25,6 @@ import android.view.accessibility.AccessibilityEvent;
 
 public class SlidingUpPanelLayout extends ViewGroup {
 
-	private static final String TAG = SlidingUpPanelLayout.class
-			.getSimpleName();
-
 	/**
 	 * Default peeking out panel height
 	 */

@@ -11,8 +11,6 @@ package com.campusguide.route;
 import android.os.AsyncTask;
 
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.PolylineOptions;
-
 import java.util.ArrayList;
 
 public class Routing extends AsyncTask<LatLng, Void, Route> {

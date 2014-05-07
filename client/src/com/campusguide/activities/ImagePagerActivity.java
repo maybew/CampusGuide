@@ -4,9 +4,6 @@ import com.campusguide.R;
 import com.campusguide.activities.Constants.Extra;
 import com.campusguide.utilities.ImageLoader;
 
-import com.campusguide.utilities.ImageLoader;
-
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.app.FragmentActivity;
@@ -16,9 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 /**
  * @author Sergey Tarasevich (nostra13[at]gmail[dot]com)
@@ -85,8 +80,6 @@ public class ImagePagerActivity extends FragmentActivity {
 			ImageView imageView = (ImageView) imageLayout
 					.findViewById(R.id.image);
 			TextView descView = (TextView) imageLayout.findViewById(R.id.description);
-			final ProgressBar spinner = (ProgressBar) imageLayout
-					.findViewById(R.id.loading);
 
 			/*
 			 * imageLoader.displayImage(images[position], imageView, options,

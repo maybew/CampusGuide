@@ -20,11 +20,13 @@ public class BaseBuilding {
 	protected String description;
 	protected List<Image> images;
 	protected String openTime;
+	protected String occupant;
+	protected String event;
 
 	public enum Fields {
 		PK("pk"), NAME("name"), CATEGPROES("categories"), ADDRESS("address"), LAT(
 				"lat"), LNG("lng"), DESC("desc"), IMAGES("images"), OPENTIME(
-				"open_time");
+				"open_time"), OCCUPANT("occupant"), EVENT("event");
 
 		protected String _sValue;
 
@@ -49,6 +51,8 @@ public class BaseBuilding {
 					fields.getDouble(Fields.LAT.getValue()),
 					fields.getDouble(Fields.LNG.getValue()),
 					fields.getString(Fields.DESC.getValue()),
+					fields.getString(Fields.OCCUPANT.getValue()),
+					fields.getString(Fields.EVENT.getValue()),
 					Image.newInstanceList(
 							fields.getJSONArray(Fields.IMAGES.getValue()),
 							context), fields.getString(Fields.OPENTIME
@@ -65,7 +69,7 @@ public class BaseBuilding {
 	}
 
 	private BaseBuilding(int pk, String name, List<String> categories,
-			String address, double lat, double lng, String description,
+			String address, double lat, double lng, String description, String occupant, String event,
 			List<Image> images, String openTime) {
 		this.pk = pk;
 		this.name = name;
@@ -76,6 +80,8 @@ public class BaseBuilding {
 		this.description = description;
 		this.images = images;
 		this.openTime = openTime;
+		this.occupant = occupant;
+		this.event = event;
 		for (String s : categories) {
 			if (!allCategories.contains(s))
 				allCategories.add(s);
@@ -145,6 +151,14 @@ public class BaseBuilding {
 
 	public String getOpenTime() {
 		return openTime;
+	}
+	
+	public String getOccupant() {
+		return occupant;
+	}
+	
+	public String getEvent() {
+		return event;
 	}
 
 	@Override

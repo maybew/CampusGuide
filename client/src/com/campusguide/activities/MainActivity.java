@@ -86,32 +86,32 @@ public class MainActivity extends FragmentActivity implements
 		ToViewListFragmentListener, OnMyLocationChangeListener {
 
 	/**
-	 *	Mode identifier
-	 *	Map mode, Navigation mode, Information mode, Pre_Navigarion mode.
+	 * Mode identifier Map mode, Navigation mode, Information mode,
+	 * Pre_Navigarion mode.
 	 */
 	public static final int MAP_MODE = 0;
 	public static final int NAVI_MODE = 1;
 	public static final int INFO_MODE = 2;
 	public static final int PRE_NAVI_MODE = 3;
-	
+
 	/**
-	 * Fragment tag
-	 * Map fragment, Search fragment, Nearby, To view fragment, Augmented Reality fragment
+	 * Fragment tag Map fragment, Search fragment, Nearby, To view fragment,
+	 * Augmented Reality fragment
 	 */
 	private static final String MAP_FRAGMENT_TAG = "map_fragment";
 	private static final String SEARCH_FRAGMENT_TAG = "search_fragment";
 	private static final String NEARBY_FRAGMENT_TAG = "nearby_fragment";
 	private static final String TOVIEW_FRAGMENT_TAG = "toview_fragment";
 	private static final String AR_FRAGMENT_TAG = "ar_fragment";
-	
+
 	/**
-	 * Initial map view configuration
-	 * Define the map center location, zoom level.
+	 * Initial map view configuration Define the map center location, zoom
+	 * level.
 	 */
 	private static final LatLng UWL_CENTER = new LatLng(43.81604278,
 			-91.23061895);
 	private static final int UWL_CENTER_ZOOM = 15;
-	
+
 	/**
 	 * Define drawer items
 	 */
@@ -129,6 +129,8 @@ public class MainActivity extends FragmentActivity implements
 	// Drawer
 	private DrawerLayout mDrawerLayout;
 	private ListView mDrawerList;
+
+	// Sliding up pane
 	private SlidingUpPanelLayout mSlidingUpPanelLayout;
 	private ViewPager mPager;
 
@@ -144,7 +146,7 @@ public class MainActivity extends FragmentActivity implements
 	private TextView mPreNaviTimeText;
 	private Button mPreStartBtn;
 	private Button mPreExitBtn;
-	
+
 	// Navigation bar
 	private LinearLayout mNaviBar;
 	private TextView mNaviInstruText;
@@ -172,6 +174,9 @@ public class MainActivity extends FragmentActivity implements
 	private static Marker mActivedMarker = null;
 	private static Route route;
 
+	/**
+	 * Callback function when activity is creating
+	 */
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -209,10 +214,10 @@ public class MainActivity extends FragmentActivity implements
 		mPreNaviDisText = (TextView) findViewById(R.id.pre_navi_distance_text);
 		mPreNaviTimeText = (TextView) findViewById(R.id.pre_navi_time_text);
 		mPreStartBtn = (Button) findViewById(R.id.pre_navi_start_btn);
-		mPreStartBtn.setOnClickListener(new StartNaviButtonListener());                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+		mPreStartBtn.setOnClickListener(new StartNaviButtonListener());
 		mPreExitBtn = (Button) findViewById(R.id.pre_navi_exit_btn);
 		mPreExitBtn.setOnClickListener(new ExitNaviButtonListener());
-		
+
 		mNaviBar = (LinearLayout) findViewById(R.id.main_navi_bar);
 		mNaviDisText = (TextView) findViewById(R.id.navi_distance_text);
 		mNaviExitBtn = (Button) findViewById(R.id.navi_exit_btn);
@@ -258,6 +263,9 @@ public class MainActivity extends FragmentActivity implements
 		setUpMapIfNeeded();
 	}
 
+	/**
+	 * Callback function when activity is resuming
+	 */
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -268,6 +276,9 @@ public class MainActivity extends FragmentActivity implements
 		mLocationClient.connect();
 	}
 
+	/**
+	 * Callback function when activity is pausing
+	 */
 	@Override
 	public void onPause() {
 		super.onPause();
@@ -276,6 +287,9 @@ public class MainActivity extends FragmentActivity implements
 		}
 	}
 
+	/**
+	 * Callback function when back button is pressed
+	 */
 	@Override
 	public void onBackPressed() {
 		// TODO Auto-generated method stub
@@ -287,6 +301,9 @@ public class MainActivity extends FragmentActivity implements
 		}
 	}
 
+	/**
+	 * Set up the map if map instance is not initiated
+	 */
 	private void setUpMapIfNeeded() {
 		// Do a null check to confirm that we have not already instantiated the
 		// map.
@@ -312,6 +329,9 @@ public class MainActivity extends FragmentActivity implements
 		}
 	}
 
+	/**
+	 * Set up location client if location client is not initiated
+	 */
 	private void setUpLocationClientIfNeeded() {
 		if (mLocationClient == null) {
 			mLocationClient = new LocationClient(getApplicationContext(), this, // ConnectionCallbacks
@@ -319,6 +339,9 @@ public class MainActivity extends FragmentActivity implements
 		}
 	}
 
+	/**
+	 * Callback function when getting data from server successfully
+	 */
 	@Override
 	public void onJSONLoadSuccess(JSONArray result) {
 		// TODO Auto-generated method stub
@@ -351,6 +374,9 @@ public class MainActivity extends FragmentActivity implements
 		mPrepared = true;
 	}
 
+	/**
+	 * Callback function when marker is clicked
+	 */
 	@Override
 	public boolean onMarkerClick(Marker arg0) {
 		// TODO Auto-generated method stub
@@ -361,12 +387,18 @@ public class MainActivity extends FragmentActivity implements
 		return true;
 	}
 
+	/**
+	 * Callback function when my location button is clicked
+	 */
 	@Override
 	public boolean onMyLocationButtonClick() {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
+	/**
+	 * Callback function when my location is changed
+	 */
 	@Override
 	public void onMyLocationChange(Location arg0) {
 		// TODO Auto-generated method stub
@@ -379,7 +411,6 @@ public class MainActivity extends FragmentActivity implements
 				setNaviInfo(mSegments.get(i));
 		}
 	}
-	
 
 	@Override
 	public void onLocationChanged(Location arg0) {
@@ -412,6 +443,9 @@ public class MainActivity extends FragmentActivity implements
 
 	}
 
+	/**
+	 * Callback function when getting route failed
+	 */
 	@Override
 	public void onRoutingFailure() {
 		// TODO Auto-generated method stub
@@ -425,6 +459,9 @@ public class MainActivity extends FragmentActivity implements
 		// TODO Auto-generated method stub
 	}
 
+	/**
+	 * Callback function when getting route successfully
+	 */
 	@Override
 	public void onRoutingSuccess(Route result) {
 		// TODO Auto-generated method stub
@@ -439,11 +476,17 @@ public class MainActivity extends FragmentActivity implements
 		mActivedPolyLine = mMap.addPolyline(polyoptions);
 		mPreNaviTimeText.setText(result.getDuration());
 		mPreNaviDisText.setText(result.getLength());
-		
+
 		route = result;
-		
+
 	}
 
+	/**
+	 * Listener for drawer item click
+	 * 
+	 * @author Boheng
+	 * 
+	 */
 	private class DrawerItemClickListener implements
 			ListView.OnItemClickListener {
 		@Override
@@ -470,6 +513,12 @@ public class MainActivity extends FragmentActivity implements
 		}
 	}
 
+	/**
+	 * Listener for search bar edit
+	 * 
+	 * @author Boheng
+	 * 
+	 */
 	private class SearchEditListener implements OnClickListener {
 
 		private List<? extends Map<String, ?>> generateSearchData() {
@@ -514,6 +563,12 @@ public class MainActivity extends FragmentActivity implements
 
 	}
 
+	/**
+	 * Listener for nearby button click
+	 * 
+	 * @author Boheng Wei
+	 * 
+	 */
 	private class NearbyButtonListener implements OnClickListener {
 
 		private final static String DISTANCE_TAG = "distance";
@@ -585,6 +640,12 @@ public class MainActivity extends FragmentActivity implements
 
 	}
 
+	/**
+	 * Listener for toview button click
+	 * 
+	 * @author Boheng
+	 * 
+	 */
 	private class ToviewButtonListener implements OnClickListener {
 
 		@Override
@@ -603,6 +664,12 @@ public class MainActivity extends FragmentActivity implements
 
 	}
 
+	/**
+	 * Listener for exit navigation button click
+	 * 
+	 * @author Boheng
+	 * 
+	 */
 	private class ExitNaviButtonListener implements OnClickListener {
 
 		@Override
@@ -614,7 +681,13 @@ public class MainActivity extends FragmentActivity implements
 		}
 
 	}
-	
+
+	/**
+	 * Listener for start navigation button click
+	 * 
+	 * @author Boheng
+	 * 
+	 */
 	private class StartNaviButtonListener implements OnClickListener {
 
 		@Override
@@ -624,16 +697,18 @@ public class MainActivity extends FragmentActivity implements
 			// Add route markers
 			mSegments.addAll(route.getSegments());
 			for (int i = 0, n = mSegments.size(); i < n; i++)
-				mNaviMarkers
-						.add(mMap.addMarker(new MarkerOptions().position(
-								mSegments.get(i).startPoint()).icon(
-								BitmapDescriptorFactory
-										.fromResource(R.drawable.navi_dot))));
+				mNaviMarkers.add(mMap.addMarker(new MarkerOptions().position(
+						mSegments.get(i).startPoint()).icon(
+						BitmapDescriptorFactory
+								.fromResource(R.drawable.navi_dot))));
 			setNaviInfo(mSegments.get(0));
 		}
-		
+
 	}
 
+	/**
+	 * Callback function when search button clicked
+	 */
 	@Override
 	public void onSearchItemClicked(int pk) {
 		// TODO Auto-generated method stub
@@ -646,12 +721,18 @@ public class MainActivity extends FragmentActivity implements
 		activateMarker(pk);
 	}
 
+	/**
+	 * Callback function when any page selected
+	 */
 	@Override
 	public void onMainPagerSelected(int pk) {
 		// TODO Auto-generated method stub
 		activateMarker(pk);
 	}
 
+	/**
+	 * Callback function when to view button clicked
+	 */
 	@Override
 	public void onAddToViewClicked(int pk) {
 		// TODO Auto-generated method stub
@@ -668,6 +749,9 @@ public class MainActivity extends FragmentActivity implements
 		}
 	}
 
+	/**
+	 * Callback function when go button clicked
+	 */
 	@Override
 	public void onGoClicked(int pk) {
 		// TODO Auto-generated method stub
@@ -677,6 +761,22 @@ public class MainActivity extends FragmentActivity implements
 		startRouting(list);
 	}
 
+	/**
+	 * Callback function when go all button clicked
+	 */
+	@Override
+	public void OnGoAllClicked(List<BaseBuilding> toViewList) {
+		// TODO Auto-generated method stub
+		if (getSupportFragmentManager().getBackStackEntryCount() != 0) {
+			getSupportFragmentManager().popBackStack();
+			switchMode(PRE_NAVI_MODE);
+		}
+		startRouting(toViewList);
+	}
+
+	/**
+	 * Callback function when item of to view list clicked
+	 */
 	@Override
 	public void onToViewListClicked() {
 		// TODO Auto-generated method stub
@@ -691,6 +791,12 @@ public class MainActivity extends FragmentActivity implements
 		startNewListFragment(mToViewListFragment, TOVIEW_FRAGMENT_TAG);
 	}
 
+	/**
+	 * Activate marker. Change icon.
+	 * 
+	 * @param pk
+	 *            The primary key of this marker
+	 */
 	private void activateMarker(int pk) {
 		if (mActivedMarker != null)
 			mActivedMarker.setIcon(BitmapDescriptorFactory
@@ -704,6 +810,14 @@ public class MainActivity extends FragmentActivity implements
 		mMainPagerAdapter.setCurrentItemByPk(pk);
 	}
 
+	/**
+	 * Start a new list fragment
+	 * 
+	 * @param mListFragment
+	 *            The fragment need to be displayed
+	 * @param tag
+	 *            Tag, used for reusing.
+	 */
 	private void startNewListFragment(Fragment mListFragment, String tag) {
 		if (!mPrepared) {
 			Toast toast = Toast.makeText(getApplicationContext(),
@@ -720,6 +834,12 @@ public class MainActivity extends FragmentActivity implements
 		}
 	}
 
+	/**
+	 * Start routing.
+	 * 
+	 * @param routeList
+	 *            All the location need to reach.
+	 */
 	private void startRouting(List<BaseBuilding> routeList) {
 		LatLng[] array = new LatLng[routeList.size() + 1];
 		LatLng start = new LatLng(mMap.getMyLocation().getLatitude(), mMap
@@ -756,6 +876,13 @@ public class MainActivity extends FragmentActivity implements
 		routing.execute(array);
 	}
 
+	/**
+	 * Find the building instance by its pk.
+	 * 
+	 * @param pk
+	 *            The primary key of this building
+	 * @return The building instance
+	 */
 	private BaseBuilding findBuildingByPk(int pk) {
 		for (int i = 0, n = mBuildings.size(); i < n; i++)
 			if (mBuildings.get(i).getPk() == pk)
@@ -763,16 +890,9 @@ public class MainActivity extends FragmentActivity implements
 		return null;
 	}
 
-	@Override
-	public void OnGoAllClicked(List<BaseBuilding> toViewList) {
-		// TODO Auto-generated method stub
-		if (getSupportFragmentManager().getBackStackEntryCount() != 0) {
-			getSupportFragmentManager().popBackStack();
-			switchMode(PRE_NAVI_MODE);
-		}
-		startRouting(toViewList);
-	}
-
+	/**
+	 * Clear navigation information
+	 */
 	private void clearNavigation() {
 		if (mActivedPolyLine != null) {
 			mActivedPolyLine.remove();
@@ -784,12 +904,23 @@ public class MainActivity extends FragmentActivity implements
 		mSegments.clear();
 	}
 
+	/**
+	 * Set navigation information. Include time, distance and instruction.
+	 * 
+	 * @param segment
+	 */
 	private void setNaviInfo(Segment segment) {
 		mNaviInstruText.setText(Html.fromHtml(segment.getInstruction()));
 		mNaviDisText.setText(segment.getDistanceText());
 		mNaviTimeText.setText(segment.getTimeText());
 	}
 
+	/**
+	 * Switch the mode
+	 * 
+	 * @param mode
+	 *            Mode identifier
+	 */
 	private void switchMode(int mode) {
 		switch (mode) {
 		case MAP_MODE:
@@ -822,13 +953,19 @@ public class MainActivity extends FragmentActivity implements
 		}
 	}
 
+	/**
+	 * Hide all markers
+	 */
 	private void hideAllMarkers() {
-		for(int i=0,n=mMarkers.size();i<n;++i)
+		for (int i = 0, n = mMarkers.size(); i < n; ++i)
 			mMarkers.get(mMarkers.keyAt(i)).setVisible(false);
 	}
-	
+
+	/**
+	 * Display all markers.
+	 */
 	private void showAllMarkers() {
-		for(int i=0,n=mMarkers.size();i<n;++i)
+		for (int i = 0, n = mMarkers.size(); i < n; ++i)
 			mMarkers.get(mMarkers.keyAt(i)).setVisible(true);
 	}
 }

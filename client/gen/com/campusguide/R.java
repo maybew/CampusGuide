@@ -253,20 +253,20 @@ containing a value of this type.
         public static final int to_view=0x7f020034;
     }
     public static final class id {
-        public static final int action_settings=0x7f04003a;
+        public static final int action_settings=0x7f04003e;
         public static final int ar_content=0x7f04001b;
-        public static final int architectView=0x7f040039;
-        public static final int description=0x7f04002d;
+        public static final int architectView=0x7f04003d;
+        public static final int description=0x7f040031;
         public static final int drawer_layout=0x7f040007;
         public static final int fragment_main_pager_toview_add=0x7f040024;
         public static final int fragment_main_pager_toview_list=0x7f040025;
-        public static final int fragment_search_edit=0x7f040028;
-        public static final int fragment_toview_go=0x7f040029;
-        public static final int fragment_toview_remove_all=0x7f04002a;
+        public static final int fragment_search_edit=0x7f04002c;
+        public static final int fragment_toview_go=0x7f04002d;
+        public static final int fragment_toview_remove_all=0x7f04002e;
         public static final int hybrid=0x7f040005;
-        public static final int image=0x7f04002b;
+        public static final int image=0x7f04002f;
         public static final int left_drawer=0x7f040019;
-        public static final int loading=0x7f04002c;
+        public static final int loading=0x7f040030;
         public static final int main_content=0x7f040009;
         public static final int main_navi_bar=0x7f040013;
         public static final int main_nearby_btn=0x7f04000c;
@@ -274,8 +274,12 @@ containing a value of this type.
         public static final int main_pager_button=0x7f04001c;
         public static final int main_pager_categories=0x7f04001e;
         public static final int main_pager_description=0x7f040026;
+        public static final int main_pager_event=0x7f04002a;
+        public static final int main_pager_event_frame=0x7f040029;
         public static final int main_pager_first_photo=0x7f040021;
         public static final int main_pager_name=0x7f04001d;
+        public static final int main_pager_occpant=0x7f040028;
+        public static final int main_pager_occpant_frame=0x7f040027;
         public static final int main_pager_openhour=0x7f04001f;
         public static final int main_pager_photos_title=0x7f040023;
         public static final int main_pager_second_photo=0x7f040022;
@@ -287,11 +291,11 @@ containing a value of this type.
         public static final int navi_exit_btn=0x7f040017;
         public static final int navi_instruction_text=0x7f040014;
         public static final int navi_time_text=0x7f040016;
-        public static final int nearby_fragment_spinner=0x7f040027;
-        public static final int nearby_list_item_categories=0x7f04002f;
-        public static final int nearby_list_item_distance=0x7f040030;
-        public static final int nearby_list_item_name=0x7f04002e;
-        public static final int nearby_list_item_pk=0x7f040031;
+        public static final int nearby_fragment_spinner=0x7f04002b;
+        public static final int nearby_list_item_categories=0x7f040033;
+        public static final int nearby_list_item_distance=0x7f040034;
+        public static final int nearby_list_item_name=0x7f040032;
+        public static final int nearby_list_item_pk=0x7f040035;
         public static final int none=0x7f040001;
         public static final int normal=0x7f040002;
         public static final int pager=0x7f040006;
@@ -301,17 +305,17 @@ containing a value of this type.
         public static final int pre_navi_time_text=0x7f040010;
         public static final int preview=0x7f04001a;
         public static final int satellite=0x7f040003;
-        public static final int search_list_item_categories=0x7f040033;
-        public static final int search_list_item_name=0x7f040032;
-        public static final int search_list_item_pk=0x7f040034;
+        public static final int search_list_item_categories=0x7f040037;
+        public static final int search_list_item_name=0x7f040036;
+        public static final int search_list_item_pk=0x7f040038;
         public static final int sliding_layout=0x7f040008;
         public static final int sliding_pager=0x7f040018;
         public static final int terrain=0x7f040004;
         public static final int text=0x7f040000;
-        public static final int toview_list_item_categories=0x7f040036;
-        public static final int toview_list_item_name=0x7f040035;
-        public static final int toview_list_item_pk=0x7f040038;
-        public static final int toview_list_item_remove=0x7f040037;
+        public static final int toview_list_item_categories=0x7f04003a;
+        public static final int toview_list_item_name=0x7f040039;
+        public static final int toview_list_item_pk=0x7f04003c;
+        public static final int toview_list_item_remove=0x7f04003b;
     }
     public static final class layout {
         public static final int activity_image_pager=0x7f030000;
@@ -429,6 +433,7 @@ containing a value of this type.
         /**  Long form sign-in button text [CHAR LIMIT=30] 
          */
         public static final int common_signin_button_text_long=0x7f070012;
+        public static final int event=0x7f07002e;
         public static final int exit_navi=0x7f07002b;
         public static final int introduction=0x7f070021;
         public static final int loading_data=0x7f070028;
@@ -437,6 +442,7 @@ containing a value of this type.
         public static final int main_pager_toview_list=0x7f070027;
         public static final int nearby_spinner_desc=0x7f070023;
         public static final int no_data=0x7f070022;
+        public static final int occupant=0x7f07002d;
         public static final int open_hour=0x7f07001e;
         public static final int photos=0x7f070020;
         public static final int search_hint=0x7f07001c;

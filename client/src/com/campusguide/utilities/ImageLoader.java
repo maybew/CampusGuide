@@ -1,5 +1,7 @@
 package com.campusguide.utilities;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -7,6 +9,8 @@ import java.util.Map;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Environment;
+import android.util.Log;
 import android.widget.ImageView;
 
 public class ImageLoader extends BaseLoader<String, Void, Bitmap>{
@@ -32,9 +36,12 @@ public class ImageLoader extends BaseLoader<String, Void, Bitmap>{
 			return bitmap;
 		try {
 			bitmap = BitmapFactory.decodeStream(getInputStream(params[0]));
+			saveImageToSD(params[0], bitmap);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			Log.i("sd image", params[0]);
+			bitmap = readImageFromSD(params[0]);
 		}
 		CACHE.put(params[0], bitmap);
 		return bitmap;
@@ -46,5 +53,37 @@ public class ImageLoader extends BaseLoader<String, Void, Bitmap>{
 		super.onPostExecute(result);
 		if(mImageView != null)
 			mImageView.setImageBitmap(result);
+	}
+	
+	private void saveImageToSD(String url, Bitmap bitmap) {
+		try {
+			File newFolder = new File(Environment.getExternalStorageDirectory(), "CampusGuidCache/images");
+			if(!newFolder.exists())
+				newFolder.mkdir();
+			File file = new File(newFolder, parseUrl(url));
+			file.createNewFile();
+			FileOutputStream fout = new FileOutputStream(file);
+			bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fout);
+			fout.flush();
+			fout.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private Bitmap readImageFromSD(String url) {
+		try {
+			File newFolder = new File(Environment.getExternalStorageDirectory(), "CampusGuidCache/images");
+			File file = new File(newFolder, parseUrl(url));
+			Bitmap bitmap = BitmapFactory.decodeFile(file.getPath());
+			return bitmap;
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
+	private String parseUrl(String url) {
+		int index = url.lastIndexOf("/");
+		return url.substring(index+1);
 	}
 }

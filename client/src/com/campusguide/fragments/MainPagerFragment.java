@@ -22,13 +22,15 @@ import com.campusguide.utilities.ImageLoader;
 import com.campusguide.utilities.Utils;
 
 public class MainPagerFragment extends Fragment implements View.OnClickListener {
-	
+
 	public interface MainPagerListener {
 		public void onAddToViewClicked(int pk);
+
 		public void onGoClicked(int pk);
+
 		public void onToViewListClicked();
 	}
-	
+
 	private int pk;
 	private String mName;
 	private String mCategories;
@@ -37,7 +39,9 @@ public class MainPagerFragment extends Fragment implements View.OnClickListener 
 	private List<String> mPhotos;
 	private List<String> mPhotosDesc;
 	private String mDescription;
-	
+	private String mOccupant;
+	private String mEvent;
+
 	private MainPagerListener mListener;
 
 	public static MainPagerFragment newInstance(BaseBuilding b) {
@@ -53,6 +57,8 @@ public class MainPagerFragment extends Fragment implements View.OnClickListener 
 		args.putStringArrayList("photos", b.getURLs());
 		args.putStringArrayList("photos_desc", b.getImagesDesc());
 		args.putString("description", b.getDescription());
+		args.putString("occupant", b.getOccupant());
+		args.putString("event", b.getEvent());
 		f.setArguments(args);
 
 		return f;
@@ -77,6 +83,10 @@ public class MainPagerFragment extends Fragment implements View.OnClickListener 
 				.getStringArrayList("photos_desc") : null;
 		mDescription = getArguments() != null ? getArguments().getString(
 				"description") : "";
+		mOccupant = getArguments() != null ? getArguments().getString(
+				"occupant") : "";
+		mEvent = getArguments() != null ? getArguments().getString(
+				"event") : "";
 	}
 
 	@Override
@@ -112,17 +122,40 @@ public class MainPagerFragment extends Fragment implements View.OnClickListener 
 				.findViewById(R.id.main_pager_photos_title);
 		photoTitleTv.setText(mPhotos.size() + " photos");
 		photoTitleTv.setOnClickListener(this);
-		
-		LinearLayout mAddBtn = (LinearLayout) view.findViewById(R.id.fragment_main_pager_toview_add);
+
+		LinearLayout mAddBtn = (LinearLayout) view
+				.findViewById(R.id.fragment_main_pager_toview_add);
 		mAddBtn.setOnClickListener(this);
-		LinearLayout mToViewBtn = (LinearLayout) view.findViewById(R.id.fragment_main_pager_toview_list);
+		LinearLayout mToViewBtn = (LinearLayout) view
+				.findViewById(R.id.fragment_main_pager_toview_list);
 		mToViewBtn.setOnClickListener(this);
-		ImageButton mGoBtn = (ImageButton) view.findViewById(R.id.main_pager_button);
+		ImageButton mGoBtn = (ImageButton) view
+				.findViewById(R.id.main_pager_button);
 		mGoBtn.setOnClickListener(this);
 
 		TextView descriptionTv = (TextView) view
 				.findViewById(R.id.main_pager_description);
 		descriptionTv.setText(mDescription);
+
+		if ("".equals(mOccupant)) {
+			LinearLayout occupantFrame = (LinearLayout) view
+					.findViewById(R.id.main_pager_occpant_frame);
+			occupantFrame.setVisibility(View.GONE);
+		} else {
+			TextView occupantTv = (TextView) view
+					.findViewById(R.id.main_pager_occpant);
+			occupantTv.setText(mOccupant);
+		}
+		
+		if ("".equals(mEvent)) {
+			LinearLayout eventFrame = (LinearLayout) view
+					.findViewById(R.id.main_pager_event_frame);
+			eventFrame.setVisibility(View.GONE);
+		} else {
+			TextView eventTv = (TextView) view
+					.findViewById(R.id.main_pager_event);
+			eventTv.setText(mEvent);
+		}
 		return view;
 	}
 

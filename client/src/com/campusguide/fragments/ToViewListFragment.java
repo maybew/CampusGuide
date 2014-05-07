@@ -25,6 +25,11 @@ import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
 public class ToViewListFragment extends ListFragment {
+	/**
+	 * Listener, the activity call this fragment need to implement this listener.
+	 * @author Boheng
+	 *
+	 */
 	public interface ToViewListFragmentListener {
 		public void OnGoAllClicked(List<BaseBuilding> toViewList);
 	}
